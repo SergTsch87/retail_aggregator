@@ -3,7 +3,7 @@
 # env1\bin\python -m pip freeze > requirements.txt
 # env2\bin\python -m pip install -r requirements.txt
 
-import requests, time
+import requests, time, csv
 from bs4 import BeautifulSoup
 
 
@@ -248,6 +248,65 @@ def scrape_content_page(url):
         return f"Error fetching the product page: {e}"
     
 
+def fetch_html(url):
+    """
+        Завантажує HTML-вміст сторінки.
+        Перевіряє статус HTTP-відповіді (напр., чи немає помилки 403/404).
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=20)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        return response.text
+    except requests.exceptions.RequestException as e:
+        return f'Error fetching {url}: {e}'
+
+
+def check_parsability(html):
+    """
+        Перевіряє наявність основного контенту, який містить інф-цію про продукти
+    """
+    try:
+        soup = BeautifulSoup(html, 'html.parser')
+        potential_elements = soup.find_all(['ul', 'ol', 'div'], recursive=True, limit=5)
+        if potential_elements:
+            return 'Parsable'  # Є базовий html-контент
+        return 'Likely JS-generated or no content found'
+    except Exception as e:
+        return f'Error parsing HTML: {e}'
+
+
+def check_bots_protection(html):
+    if 'captcha' in html.lower():
+        return 'Protected by CAPTCHA'
+    elif 'login' in html.lower() or 'sign in' in html.lower():
+        return 'Requires login'
+    return 'No apparent bot protection'
+
+
+# def check_bots_protection(url):
+#     html = fetch_html(url)
+#     if 'captcha' in html.lower():
+#         return 'Protected by CAPTCHA'
+#     elif 'login' in html.lower() or 'sign in' in html.lower():
+#         return 'Requires login'
+#     return 'No apparent bot protection'
+
+
+def save_to_csv(results, fname = 'parsing_res.csv'):
+    """
+        Зберігає рез-ти перевірки до CSV для подальшого ан-зу
+    """
+    with open(fname, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Website', 'Status'])
+        for url, status in results.items():
+            writer.writerow([url, status])
+
+
 def main():
     # І тут усе генерується динамічно...
     # url = 'https://www.atbmarket.com/catalog/molocni-produkti-ta-ajca'
@@ -296,9 +355,19 @@ def main():
 'https://posad.com.ua/products/ovochi-frukti-suhofrukti/'
     ]
 
-    for item_url in urls:
-        content_page = scrape_product_price_novus(item_url)
-        print(f'The price of the product is: {content_page}')
+    # Завантажуємо HTML
+    # та перевіряємо наявність ключових елементів
+    for url in urls:
+        print(f'\nChecking {url}...')
+        html = fetch_html(url)
+        if html.startswith('Error'):
+            print(f'Error!  {html}\n')   # Проблема із завантаженням
+        else:
+            result_1 = check_parsability(html)
+            result_2 = check_bots_protection(html)
+            print(f'{url}: {result_1}\n {result_2}\n')
+        # content_page = scrape_product_price_novus(url)
+        # print(f'The price of the product is: {content_page}')
     
 if __name__ == "__main__":
     main()
