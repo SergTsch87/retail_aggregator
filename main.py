@@ -3,7 +3,7 @@
 # env1\bin\python -m pip freeze > requirements.txt
 # env2\bin\python -m pip install -r requirements.txt
 
-import requests
+import requests, time
 from bs4 import BeautifulSoup
 
 
@@ -98,16 +98,207 @@ def scrape_product_price_silpo(url):
         return f"Error fetching the product page: {e}"
 
 
+def scrape_product_price_fora(url):
+    """
+    Fetches the price of a product from a given store URL.
 
-def main():
-    # url = 'https://www.atbmarket.com/catalog/molocni-produkti-ta-ajca'
-    # price_element = scrape_product_price_atb(url)
-    # print(price_element)
+    Args:
+        url (str): The URL of the product page.
 
-    url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-    price_element = scrape_product_price_silpo(url)
-    print(price_element)
+    Returns:
+        str: The price of the product or an error message if not found.
+    """
+    try:
+        # Fetch the HTML content of the page
+        response = requests.get(url, timeout=100)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # !!!
+        # Це все добре працює лише для однієї картки.
+        # Для списку карток потрібні будуть цикл та find_all()
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul > div:nth-child(3) > div > div.product-list-item__body > div > div:nth-child(1) > div.current-integer')
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul > div:nth-child(1) > div > div.product-list-item__body > div > div:nth-child(1) > div > div > div.current-integer')
+        # first_card_soup = soup.select_one('div.current-integer')
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul')
+        first_card_soup = response.text
+        print(f'first_card_soup == {first_card_soup}')
+        if first_card_soup:
+            # price_element = first_card_soup.text
+            price_element = first_card_soup
+            if price_element:
+                # return price_element.strip()
+                return price_element
+            else:
+                return "Price not found on the page"
+        else:
+            return "Tag not found on the page"
+
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching the product page: {e}"
+
+
+def scrape_product_price_metro(url):
+    """
+    Fetches the price of a product from a given store URL.
+
+    Args:
+        url (str): The URL of the product page.
+
+    Returns:
+        str: The price of the product or an error message if not found.
+    """
+    try:
+        # Fetch the HTML content of the page
+        time.sleep(30)
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # !!!
+        # Це все добре працює лише для однієї картки.
+        # Для списку карток потрібні будуть цикл та find_all()
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul > div:nth-child(3) > div > div.product-list-item__body > div > div:nth-child(1) > div.current-integer')
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul > div:nth-child(1) > div > div.product-list-item__body > div > div:nth-child(1) > div > div > div.current-integer')
+        # first_card_soup = soup.select_one('div.current-integer')
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul')
+        first_card_soup = response.text
+        print(f'first_card_soup == {first_card_soup}')
+        if first_card_soup:
+            # price_element = first_card_soup.text
+            price_element = first_card_soup
+            if price_element:
+                # return price_element.strip()
+                return price_element
+            else:
+                return "Price not found on the page"
+        else:
+            return "Tag not found on the page"
+
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching the product page: {e}"
+
+
+# !!!
+# Частина товарів тут наче є, а частини нема...
+def scrape_product_price_novus(url):
+    """
+    Fetches the price of a product from a given store URL.
+
+    Args:
+        url (str): The URL of the product page.
+
+    Returns:
+        str: The price of the product or an error message if not found.
+    """
+    try:
+        # Fetch the HTML content of the page
+        # time.sleep(30)
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # !!!
+        # Це все добре працює лише для однієї картки.
+        # Для списку карток потрібні будуть цикл та find_all()
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul > div:nth-child(3) > div > div.product-list-item__body > div > div:nth-child(1) > div.current-integer')
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul > div:nth-child(1) > div > div.product-list-item__body > div > div:nth-child(1) > div > div > div.current-integer')
+        # first_card_soup = soup.select_one('div.current-integer')
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul')
+        first_card_soup = response.text
+        print(f'first_card_soup == {first_card_soup}')
+        if first_card_soup:
+            # price_element = first_card_soup.text
+            price_element = first_card_soup
+            if price_element:
+                # return price_element.strip()
+                return price_element
+            else:
+                return "Price not found on the page"
+        else:
+            return "Tag not found on the page"
+
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching the product page: {e}"
     
 
+def scrape_content_page(url):
+    try:
+        # time.sleep(30)
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        soup = BeautifulSoup(response.text, 'html.parser')
+        first_card_soup = response.text
+        print(f'first_card_soup == {first_card_soup}')
+        if first_card_soup:
+            # price_element = first_card_soup.text
+            price_element = first_card_soup
+            if price_element:
+                # return price_element.strip()
+                return price_element
+            else:
+                return "Price not found on the page"
+        else:
+            return "Tag not found on the page"
+
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching the product page: {e}"
+    
+
+def main():
+    # І тут усе генерується динамічно...
+    # url = 'https://www.atbmarket.com/catalog/molocni-produkti-ta-ajca'
+    # price_element = scrape_product_price_atb(url)
+    # print(f'The price of the product is: {price_element}')
+
+    # url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
+    # price_element = scrape_product_price_silpo(url)
+    # print(f'The price of the product is: {price_element}')
+    
+    # url = 'https://fora.ua/category/molochni-produkty-ta-iaitsia-2656'
+    # price_element = scrape_product_price_fora(url)
+    # print(f'The price of the product is: {price_element}')
+    # # І тут усе генерується динамічно...
+
+    # url = 'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F'
+    # price_element = scrape_product_price_metro(url)
+    # print(f'The price of the product is: {price_element}')
+
+    # url = 'https://novus.ua/sales/molochna-produkcija-jajcja.html'
+    # price_element = scrape_product_price_novus(url)
+    # print(f'The price of the product is: {price_element}')
+
+
+# Тут ще можна пошукати:
+#     https://www.fozzy.ua/ua/
+
+    urls = [
+'https://varus.ua/rasprodazha?cat=53036',
+'https://varus.ua/molochni-produkti',
+'https://novus.ua/sales/molochna-produkcija-jajcja.html',
+'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F',
+'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
+'https://velmart.ua/product-of-week/',
+'https://kishenya.ua/tovar-tyzhnia/',
+'https://kishenya.ua/vkett/',
+'https://zatak.org.ua/categories/61f84a85-5d59-444f-9ab6-b2d83b57f2c5',
+'https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash',
+'https://eko.zakaz.ua/uk/categories/dairy-and-eggs-ekomarket/',
+'https://shop.nashkraj.ua/lutsk/category/molokoprodukti-yaytsya',
+'https://myasnakorzyna.net.ua/catalog',
+'https://pankovbasko.com/ua/catalog/molochnaya-produkchuya/all',
+'https://megamarket.ua/catalog/moloko',
+'https://www.evrotek.com/ua/arsen/sobstvennoe-proizvodstvo-assortiment/molochne-virobnictvo.html',
+'https://my.kopeyka.com.ua/shares/category/5?name=%D0%9C%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%20%D0%AF%D0%B9%D1%86%D1%8F',
+'https://posad.com.ua/products/ovochi-frukti-suhofrukti/'
+    ]
+
+    for item_url in urls:
+        content_page = scrape_product_price_novus(item_url)
+        print(f'The price of the product is: {content_page}')
+    
 if __name__ == "__main__":
     main()
