@@ -296,15 +296,25 @@ def check_bots_protection(html):
 #     return 'No apparent bot protection'
 
 
+# def save_to_csv(results, fname = 'parsing_res.csv'):
+#     """
+#         Зберігає рез-ти перевірки до CSV для подальшого ан-зу
+#     """
+#     with open(fname, mode='w', newline='', encoding='utf-8') as file:
+#         writer = csv.writer(file)
+#         writer.writerow(['Website', 'Status'])
+#         for url, status in results.items():
+#             writer.writerow([url, status])
+
 def save_to_csv(results, fname = 'parsing_res.csv'):
     """
         Зберігає рез-ти перевірки до CSV для подальшого ан-зу
     """
     with open(fname, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['Website', 'Status'])
-        for url, status in results.items():
-            writer.writerow([url, status])
+        writer.writerow(['Name', 'URL', 'Result'])
+        for result in results:
+            writer.writerow(result)
 
 
 def scrape_product_price(url, path):
@@ -377,28 +387,34 @@ def main():
 #     https://www.fozzy.ua/ua/
 
     dict_urls = {
+        'novus': ['https://novus.ua/sales/molochna-produkcija-jajcja.html', '#product-price-4759 > span > span.integer'],
+        'silpo': ['https://silpo.ua/category/molochni-produkty-ta-iaitsia-234', 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.ft-flex.ft-flex-col.ft-item-center.xl\\:ft-flex-row > div'],
+        'spar': ['https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash', '#main > div.container_center.clearfix > div > div > div > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price'],
+        'eko_market': ['https://eko.zakaz.ua/uk/categories/dairy-and-eggs-ekomarket/', '#PageWrapBody_desktopMode > div.jsx-b98800c5ccb0b885.ProductsBox > div > div:nth-child(1) > div > a > span > div.jsx-cdc81c93bd075911.ProductTile__details > div.jsx-cdc81c93bd075911.ProductTile__prices > div > span.jsx-9c4923764db53380.Price__value_caption'],
+        'nashkraj': ['https://shop.nashkraj.ua/lutsk/category/molokoprodukti-yaytsya', '#main > div.container_center.clearfix > div > div > div.col-lg-9.col-md-9.col-sm-8.col-xs-6.pad_0.media_870 > div:nth-child(3) > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price'],
+        'pankovbasko': ['https://pankovbasko.com/ua/catalog/molochnaya-produkchuya/all', '#content > ul.row.block-grid.list-unstyled > li:nth-child(1) > div > div.product-price > span.price'],
+        'megamarket': ['https://megamarket.ua/catalog/moloko', 'body > div.main_wrapper.grids > div.main > div.main_row > div > ul > li:nth-child(1) > div.product_info > form > div.price_block > div > div.price.cp'],
+        
         'varus_1': ['https://varus.ua/rasprodazha?cat=53036', '#category > div.main.section > div.products > div.block > div:nth-child(2) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > ins'],
         'varus_2': ['https://varus.ua/molochni-produkti', '#category > div.main > div.products > div:nth-child(3) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > span'],
-        'novus': ['https://novus.ua/sales/molochna-produkcija-jajcja.html', '#product-price-4759 > span > span.integer'],
         'metro': ['https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F', '#main > div > div.content-container > div:nth-child(2) > div.mfcss.mfcss_wrapper > div.fixed-width-container > div > div > div:nth-child(2) > div > div.col-lg-9 > div.mfcss_card-article-2--grid-container-flex > span:nth-child(1) > div > div > div.bottom-part > div > div.price-display-main-row > span.primary.promotion.volume-discount > span > span'],
-        'silpo': ['https://silpo.ua/category/molochni-produkty-ta-iaitsia-234', 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.ft-flex.ft-flex-col.ft-item-center.xl\\:ft-flex-row > div'],
         'velmart': ['https://velmart.ua/product-of-week/', '#main > div > div > div > section.elementor-section.elementor-top-section.elementor-element.elementor-element-ecfc4c.elementor-section-stretched.elementor-section-boxed.elementor-section-height-default.elementor-section-height-default.jet-parallax-section > div.elementor-container.elementor-column-gap-default > div > div > div > div > div > div > div > div > div:nth-child(1) > div > h5 > a'],
         'kishenya_1': ['https://kishenya.ua/tovar-tyzhnia/', '#rl-gallery-1 > div:nth-child(1) > a > img'],
         'kishenya_2': ['https://kishenya.ua/vkett/', '#rl-gallery-1 > div:nth-child(1) > a > img'],
         'zatak': ['https://zatak.org.ua/categories/61f84a85-5d59-444f-9ab6-b2d83b57f2c5', '#main-goods-list-container > div > div.goods-list__container.noBreadcrumbs > app-goods-list-container > div > div.goods-container__goods > app-goods-list > div.goods-list.ng-star-inserted > div:nth-child(1) > app-goods-list-item > div > app-goods-list-item-template > div.goods-list-item__body > div > p.goods-list-item__price-value'],
-        'spar': ['https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash', '#main > div.container_center.clearfix > div > div > div > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price'],
-        'eko_market': ['https://eko.zakaz.ua/uk/categories/dairy-and-eggs-ekomarket/', '#PageWrapBody_desktopMode > div.jsx-b98800c5ccb0b885.ProductsBox > div > div:nth-child(1) > div > a > span > div.jsx-cdc81c93bd075911.ProductTile__details > div.jsx-cdc81c93bd075911.ProductTile__prices > div > span.jsx-9c4923764db53380.Price__value_caption'],
-        'nashkraj': ['https://shop.nashkraj.ua/lutsk/category/molokoprodukti-yaytsya', '#main > div.container_center.clearfix > div > div > div.col-lg-9.col-md-9.col-sm-8.col-xs-6.pad_0.media_870 > div:nth-child(3) > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price'],
         'myasnakorzyna': ['https://myasnakorzyna.net.ua/catalog', '#main > div > section > div > div.layout-box__catalog > div.layout-box__catalog-content > div:nth-child(1) > div.price > div'],
-        'pankovbasko': ['https://pankovbasko.com/ua/catalog/molochnaya-produkchuya/all', '#content > ul.row.block-grid.list-unstyled > li:nth-child(1) > div > div.product-price > span.price'],
-        'megamarket': ['https://megamarket.ua/catalog/moloko', 'body > div.main_wrapper.grids > div.main > div.main_row > div > ul > li:nth-child(1) > div.product_info > form > div.price_block > div > div.price.cp'],
         'kopiyka': ['https://my.kopeyka.com.ua/shares/category/5?name=%D0%9C%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%20%D0%AF%D0%B9%D1%86%D1%8F', 'body > app > wrapper > main > div > share > div > div:nth-child(2) > products > div > div > div:nth-child(1) > div.product-prices > div > div.product-price-new']
     }
 
+    results = []
     for key, value in dict_urls.items():
         url = value[0]
         path = value[1]
-        print(f'\n{key}: {scrape_product_price(url, path)}\n')
+        tmp_str = f'\n{key}: {scrape_product_price(url, path)}\n'
+        results.append(tmp_str)
+        print(tmp_str)
+
+    save_to_csv(results, fname = 'parsing_res.csv')
 
 #     urls = [
 # 'https://varus.ua/rasprodazha?cat=53036',
@@ -457,3 +473,24 @@ if __name__ == "__main__":
 # https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F
 # https://my.kopeyka.com.ua/shares/category/5?name=%D0%9C%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%20%D0%AF%D0%B9%D1%86%D1%8F
 # https://zatak.org.ua/categories/61f84a85-5d59-444f-9ab6-b2d83b57f2c5
+
+
+# Results:
+
+    # novus: 569
+    # silpo: 49.99 грн
+    # spar: 28.1 грн
+    # eko_market: 6.44
+    # nashkraj: 6.2 грн
+    # pankovbasko: 55.50
+    # megamarket: 49""90 грн
+
+    # varus_1: Tag not found on the page
+    # varus_2: Tag not found on the page
+    # metro: Tag not found on the page
+    # velmart: Tag not found on the page
+    # kishenya_1: Price not found on the page
+    # kishenya_2: Price not found on the page
+    # zatak: Tag not found on the page
+    # myasnakorzyna: Error fetching the product page: 403 Client Error: Forbidden for url: https://myasnakorzyna.net.ua/catalog
+    # kopiyka: Tag not found on the page
