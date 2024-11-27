@@ -223,7 +223,7 @@ def scrape_product_price_novus(url):
 
     except requests.exceptions.RequestException as e:
         return f"Error fetching the product page: {e}"
-    
+
 
 def scrape_content_page(url):
     try:
@@ -307,6 +307,48 @@ def save_to_csv(results, fname = 'parsing_res.csv'):
             writer.writerow([url, status])
 
 
+def scrape_product_price(url, path):
+    """
+    Fetches the price of a product from a given store URL.
+
+    Args:
+        url (str): The URL of the product page.
+
+    Returns:
+        str: The price of the product or an error message if not found.
+    """
+    try:
+        # Fetch the HTML content of the page
+        time.sleep(30)
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # !!!
+        # Це все добре працює лише для однієї картки.
+        # Для списку карток потрібні будуть цикл та find_all()
+        # first_card_soup = soup.select_one('#id-b01cc0e8-74ff-0f66-bcc9-9e3596616ba4 > div.container > div.content > div > div.category-page__content > div.product-list__wrapper > ul > div:nth-child(3) > div > div.product-list-item__body > div > div:nth-child(1) > div.current-integer')
+        first_card_soup = soup.select_one(path)
+        
+        # first_card_soup = response.text
+        print(f'first_card_soup == {first_card_soup}')
+        if first_card_soup:
+            price_element = first_card_soup.text
+            # price_element = first_card_soup
+            if price_element:
+                return price_element.strip()
+                # return price_element
+            else:
+                return "Price not found on the page"
+        else:
+            return "Tag not found on the page"
+
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching the product page: {e}"
+
+
+
 def main():
     # І тут усе генерується динамічно...
     # url = 'https://www.atbmarket.com/catalog/molocni-produkti-ta-ajca'
@@ -322,9 +364,9 @@ def main():
     # print(f'The price of the product is: {price_element}')
     # # І тут усе генерується динамічно...
 
-    # url = 'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F'
-    # price_element = scrape_product_price_metro(url)
-    # print(f'The price of the product is: {price_element}')
+    url = 'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F'
+    price_element = scrape_product_price_metro(url)
+    print(f'The price of the product is: {price_element}')
 
     # url = 'https://novus.ua/sales/molochna-produkcija-jajcja.html'
     # price_element = scrape_product_price_novus(url)
@@ -334,40 +376,84 @@ def main():
 # Тут ще можна пошукати:
 #     https://www.fozzy.ua/ua/
 
-    urls = [
-'https://varus.ua/rasprodazha?cat=53036',
-'https://varus.ua/molochni-produkti',
-'https://novus.ua/sales/molochna-produkcija-jajcja.html',
-'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F',
-'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
-'https://velmart.ua/product-of-week/',
-'https://kishenya.ua/tovar-tyzhnia/',
-'https://kishenya.ua/vkett/',
-'https://zatak.org.ua/categories/61f84a85-5d59-444f-9ab6-b2d83b57f2c5',
-'https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash',
-'https://eko.zakaz.ua/uk/categories/dairy-and-eggs-ekomarket/',
-'https://shop.nashkraj.ua/lutsk/category/molokoprodukti-yaytsya',
-'https://myasnakorzyna.net.ua/catalog',
-'https://pankovbasko.com/ua/catalog/molochnaya-produkchuya/all',
-'https://megamarket.ua/catalog/moloko',
-'https://www.evrotek.com/ua/arsen/sobstvennoe-proizvodstvo-assortiment/molochne-virobnictvo.html',
-'https://my.kopeyka.com.ua/shares/category/5?name=%D0%9C%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%20%D0%AF%D0%B9%D1%86%D1%8F',
-'https://posad.com.ua/products/ovochi-frukti-suhofrukti/'
-    ]
+    dict_urls = {
+        'varus_1': ['https://varus.ua/rasprodazha?cat=53036', '#category > div.main.section > div.products > div.block > div:nth-child(2) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > ins'],
+        'varus_2': ['https://varus.ua/molochni-produkti', '#category > div.main > div.products > div:nth-child(3) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > span'],
+        'novus': ['https://novus.ua/sales/molochna-produkcija-jajcja.html', '#product-price-4759 > span > span.integer'],
+        'metro': ['https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F', '#main > div > div.content-container > div:nth-child(2) > div.mfcss.mfcss_wrapper > div.fixed-width-container > div > div > div:nth-child(2) > div > div.col-lg-9 > div.mfcss_card-article-2--grid-container-flex > span:nth-child(1) > div > div > div.bottom-part > div > div.price-display-main-row > span.primary.promotion.volume-discount > span > span'],
+        'silpo': ['https://silpo.ua/category/molochni-produkty-ta-iaitsia-234', 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.ft-flex.ft-flex-col.ft-item-center.xl\\:ft-flex-row > div'],
+        'velmart': ['https://velmart.ua/product-of-week/', '#main > div > div > div > section.elementor-section.elementor-top-section.elementor-element.elementor-element-ecfc4c.elementor-section-stretched.elementor-section-boxed.elementor-section-height-default.elementor-section-height-default.jet-parallax-section > div.elementor-container.elementor-column-gap-default > div > div > div > div > div > div > div > div > div:nth-child(1) > div > h5 > a'],
+        'kishenya_1': ['https://kishenya.ua/tovar-tyzhnia/', '#rl-gallery-1 > div:nth-child(1) > a > img'],
+        'kishenya_2': ['https://kishenya.ua/vkett/', '#rl-gallery-1 > div:nth-child(1) > a > img'],
+        'zatak': ['https://zatak.org.ua/categories/61f84a85-5d59-444f-9ab6-b2d83b57f2c5', '#main-goods-list-container > div > div.goods-list__container.noBreadcrumbs > app-goods-list-container > div > div.goods-container__goods > app-goods-list > div.goods-list.ng-star-inserted > div:nth-child(1) > app-goods-list-item > div > app-goods-list-item-template > div.goods-list-item__body > div > p.goods-list-item__price-value'],
+        'spar': ['https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash', '#main > div.container_center.clearfix > div > div > div > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price'],
+        'eko_market': ['https://eko.zakaz.ua/uk/categories/dairy-and-eggs-ekomarket/', '#PageWrapBody_desktopMode > div.jsx-b98800c5ccb0b885.ProductsBox > div > div:nth-child(1) > div > a > span > div.jsx-cdc81c93bd075911.ProductTile__details > div.jsx-cdc81c93bd075911.ProductTile__prices > div > span.jsx-9c4923764db53380.Price__value_caption'],
+        'nashkraj': ['https://shop.nashkraj.ua/lutsk/category/molokoprodukti-yaytsya', '#main > div.container_center.clearfix > div > div > div.col-lg-9.col-md-9.col-sm-8.col-xs-6.pad_0.media_870 > div:nth-child(3) > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price'],
+        'myasnakorzyna': ['https://myasnakorzyna.net.ua/catalog', '#main > div > section > div > div.layout-box__catalog > div.layout-box__catalog-content > div:nth-child(1) > div.price > div'],
+        'pankovbasko': ['https://pankovbasko.com/ua/catalog/molochnaya-produkchuya/all', '#content > ul.row.block-grid.list-unstyled > li:nth-child(1) > div > div.product-price > span.price'],
+        'megamarket': ['https://megamarket.ua/catalog/moloko', 'body > div.main_wrapper.grids > div.main > div.main_row > div > ul > li:nth-child(1) > div.product_info > form > div.price_block > div > div.price.cp'],
+        'kopiyka': ['https://my.kopeyka.com.ua/shares/category/5?name=%D0%9C%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%20%D0%AF%D0%B9%D1%86%D1%8F', 'body > app > wrapper > main > div > share > div > div:nth-child(2) > products > div > div > div:nth-child(1) > div.product-prices > div > div.product-price-new']
+    }
 
-    # Завантажуємо HTML
-    # та перевіряємо наявність ключових елементів
-    for url in urls:
-        print(f'\nChecking {url}...')
-        html = fetch_html(url)
-        if html.startswith('Error'):
-            print(f'Error!  {html}\n')   # Проблема із завантаженням
-        else:
-            result_1 = check_parsability(html)
-            result_2 = check_bots_protection(html)
-            print(f'{url}: {result_1}\n {result_2}\n')
-        # content_page = scrape_product_price_novus(url)
-        # print(f'The price of the product is: {content_page}')
+    for key, value in dict_urls.items():
+        url = value[0]
+        path = value[1]
+        print(f'\n{key}: {scrape_product_price(url, path)}\n')
+
+#     urls = [
+# 'https://varus.ua/rasprodazha?cat=53036',
+# 'https://varus.ua/molochni-produkti',
+# 'https://novus.ua/sales/molochna-produkcija-jajcja.html',
+# 'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F',
+# 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
+# 'https://velmart.ua/product-of-week/',
+# 'https://kishenya.ua/tovar-tyzhnia/',
+# 'https://kishenya.ua/vkett/',
+# 'https://zatak.org.ua/categories/61f84a85-5d59-444f-9ab6-b2d83b57f2c5',
+# 'https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash',
+# 'https://eko.zakaz.ua/uk/categories/dairy-and-eggs-ekomarket/',
+# 'https://shop.nashkraj.ua/lutsk/category/molokoprodukti-yaytsya',
+# 'https://myasnakorzyna.net.ua/catalog',
+# 'https://pankovbasko.com/ua/catalog/molochnaya-produkchuya/all',
+# 'https://megamarket.ua/catalog/moloko',
+# 'https://my.kopeyka.com.ua/shares/category/5?name=%D0%9C%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%20%D0%AF%D0%B9%D1%86%D1%8F'
+#     ]
+
+    # # Завантажуємо HTML
+    # # та перевіряємо наявність ключових елементів
+    # for url in urls:
+    #     print(f'\nChecking {url}...')
+    #     html = fetch_html(url)
+    #     if html.startswith('Error'):
+    #         print(f'Error!  {html}\n')   # Проблема із завантаженням
+    #     else:
+    #         result_1 = check_parsability(html)
+    #         result_2 = check_bots_protection(html)
+    #         print(f'{url}: {result_1}\n {result_2}\n')
+    #     # content_page = scrape_product_price_novus(url)
+    #     # print(f'The price of the product is: {content_page}')
     
 if __name__ == "__main__":
     main()
+
+# Parsable
+#     Protected by CAPTCHA
+# https://eko.zakaz.ua/uk/categories/dairy-and-eggs-ekomarket/
+# https://varus.ua/rasprodazha?cat=53036
+# https://varus.ua/molochni-produkti
+# https://novus.ua/sales/molochna-produkcija-jajcja.html
+# https://kishenya.ua/tovar-tyzhnia/
+# https://kishenya.ua/vkett/
+
+# Parsable
+#     Requires login
+# https://shop.nashkraj.ua/lutsk/category/molokoprodukti-yaytsya
+# https://silpo.ua/category/molochni-produkty-ta-iaitsia-234
+# https://velmart.ua/product-of-week/
+# https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash
+# https://myasnakorzyna.net.ua/catalog
+# https://megamarket.ua/catalog/moloko
+# https://pankovbasko.com/ua/catalog/molochnaya-produkchuya/all
+# https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F
+# https://my.kopeyka.com.ua/shares/category/5?name=%D0%9C%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%20%D0%AF%D0%B9%D1%86%D1%8F
+# https://zatak.org.ua/categories/61f84a85-5d59-444f-9ab6-b2d83b57f2c5
