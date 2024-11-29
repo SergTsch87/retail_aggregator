@@ -351,6 +351,89 @@ def scrape_product_price(url, path):
         return f"Error fetching the product page: {e}"
 
 
+def fetch_page_content(url):
+    """
+    Fetches the HTML content of a webpage with error handling for network issues.
+
+    Args:
+        url (str): The URL of the webpage.
+
+    Returns:
+        str: The HTML content of the page, or an error message if an exception occurs.
+    """
+
+    try:
+        # Set a timeout to prevent handling
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+        return response.text
+    
+    except requests.exceptions.Timeout:
+        return 'Error: The request timed out.'
+
+    except requests.exceptions.ConnectionError:
+        return 'Error: A connection error occured.'
+    
+    except requests.exceptions.HTTPError as e:
+        return f'Error: HTTP error occured. Status code: {response.status_code}'
+    
+    except requests.exceptions.RequestException as e:
+        # Catch-all for other request-related errors
+        return f'Error: An unexpected error occurred: {e}'
+    
+
+def parse_page(url, path):
+    """
+    Parses a webpage and extracts content using BeautifulSoup.
+
+    Args:
+        url (str): The URL of the webpage.
+
+    Returns:
+        str: The extracted content or an error message.
+    """
+    html_content = fetch_page_content(url)
+    if 'Error:' in html_content:
+        # Return error message directly if fetch_page_content failed
+        return html_content
+    
+    try:
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        if soup.select_one(path):
+            result = soup.select_one(path).text
+
+            if result:
+                return result.strip()
+            else:
+                raise ValueError('Extracted data is empty')  # return "Price not found on the page"
+        
+        else:
+            raise AttributeError('HTML element not found\nContent of HTML-page:\n\n{soup}')   # return "Tag not found on the page\nContent of HTML-page:\n\n{soup}"
+
+
+    except requests.exceptions.Timeout:
+        return 'Error: Request timed out'
+    
+    except requests.exceptions.ConnectionError:
+        # return 'Error: A connection error occured.'
+        return 'Error: Could not connect to server'
+    
+    except requests.exceptions.HTTPError as e:
+        return f'Error: HTTP error occured. Status code: {e.response.status_code}'
+
+    except AttributeError as e:
+        return f'Error: HTML structure issue - {e}'
+    
+    except ValueError as e:
+        return f'Error: Data issue - {e}'
+
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching the product page: {e}"
+
+    except Exception as e:
+        return f'Error: Failed to parse the page content. Details: {e}'
+
 
 def main():
     # І тут усе генерується динамічно...
@@ -367,13 +450,24 @@ def main():
     # print(f'The price of the product is: {price_element}')
     # # І тут усе генерується динамічно...
 
-    url = 'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F'
-    price_element = scrape_product_price_metro(url)
-    print(f'The price of the product is: {price_element}')
+    # url = 'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F'
+    # price_element = scrape_product_price_metro(url)
+    # print(f'The price of the product is: {price_element}')
 
     # url = 'https://novus.ua/sales/molochna-produkcija-jajcja.html'
     # price_element = scrape_product_price_novus(url)
     # print(f'The price of the product is: {price_element}')
+
+
+    # url = 'https://varus.ua/molochni-produkti'
+    # path = '#category > div.main > div.products > div:nth-child(3) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > span'
+
+    # url = 'https://novus.ua/sales/molochna-produkcija-jajcja.html'
+    #         # old path: #product-price-4759 > span > span.integer
+    # path = '#product-price-57667 > span > span.integer'
+
+    price_element = parse_page(url, path)
+    print(price_element)
 
 
 # Тут ще можна пошукати:
@@ -416,16 +510,16 @@ def main():
     # save_to_csv(results, fname_1)
 
     
-    results = []
-    for key, value in dict_urls_dynamic.items():
-        url = value[0]
-        path = value[1]
-        tmp_str = f'\n{key}: {scrape_product_price(url, path)}\n'
-        results.append(tmp_str)
-        # print(tmp_str)
+    # results = []
+    # for key, value in dict_urls_dynamic.items():
+    #     url = value[0]
+    #     path = value[1]
+    #     tmp_str = f'\n{key}: {scrape_product_price(url, path)}\n'
+    #     results.append(tmp_str)
+    #     # print(tmp_str)
     
-    fname_2 = 'parsing_res_dynamic.csv'
-    save_to_csv(results, fname_2)
+    # fname_2 = 'parsing_res_dynamic.csv'
+    # save_to_csv(results, fname_2)
 
 
     # results = []
