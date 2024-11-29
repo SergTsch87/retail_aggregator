@@ -3,8 +3,17 @@
 # env1\bin\python -m pip freeze > requirements.txt
 # env2\bin\python -m pip install -r requirements.txt
 
-import requests, time, csv
+import requests, time, csv, logging, socket
 from bs4 import BeautifulSoup
+
+
+def is_connected():
+    # Для перевірки доступності інтернету перед відправленням запиту
+    try:
+        socket.create_connection(('www.google.com', 80), timeout=5)
+        return True
+    except OSError:
+        return False
 
 
 def scrape_product_price_atb(url):
@@ -350,36 +359,54 @@ def scrape_product_price(url, path):
     except requests.exceptions.RequestException as e:
         return f"Error fetching the product page: {e}"
 
+# =========================================================
 
-def fetch_page_content(url):
+# def fetch_page_content(url):
+def fetch_url_with_retries(url, retries=3, timeout=10):
     """
-    Fetches the HTML content of a webpage with error handling for network issues.
+    Fetches a URL with a specified number of retries on network-related errors.  #  Fetches the HTML content of a webpage with error handling for network issues.
 
     Args:
-        url (str): The URL of the webpage.
+        url (str): The URL of the webpage to fetch.
+        retries (int): Number of retry attempts.
+        timeout (int): Timeout in seconds for the request.
 
     Returns:
         str: The HTML content of the page, or an error message if an exception occurs.
     """
+    
+    # Повтори при таймаутах
+    for attempt in range(retries):
+        try:
+            # Set a timeout to prevent handling
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+            return response.text  # Успішний запит, - Повертаємо контент
+        
+        except requests.exceptions.Timeout:
+            # Лише логуємо помилку, та повторюємо спробу
+            logging.error(f"Attempt {attempt + 1}: Request timed out for {url}")
+            # return 'Error: The request timed out.'
 
-    try:
-        # Set a timeout to prevent handling
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
-        return response.text
-    
-    except requests.exceptions.Timeout:
-        return 'Error: The request timed out.'
-
-    except requests.exceptions.ConnectionError:
-        return 'Error: A connection error occured.'
-    
-    except requests.exceptions.HTTPError as e:
-        return f'Error: HTTP error occured. Status code: {response.status_code}'
-    
-    except requests.exceptions.RequestException as e:
-        # Catch-all for other request-related errors
-        return f'Error: An unexpected error occurred: {e}'
+        except requests.exceptions.ConnectionError:
+            logging.error(f"Attempt {attempt + 1}: Connection error for {url}")
+            # return 'Error: A connection error occured.'
+        
+        except requests.exceptions.HTTPError as e:
+            logging.error(f"Attempt {attempt + 1}: HTTP error {response.status_code}")
+            # Повертаємо помилку одразу, бо це не мережевий збій
+            return f'Error: HTTP error occured. Status code: {response.status_code}'
+        
+        except requests.exceptions.RequestException as e:
+            # Catch-all for other request-related errors
+            logging.error(f"Attempt {attempt + 1}: Unexpected request error: {e}")
+            # if attempt == 2:
+            #     raise e  # Остання спроба
+            time.sleep(2 ** attempt)  #  Покрокове збільшення затримки, - задля уникнення блокування сервером
+            return f'Error: An unexpected error occurred: {e}'
+        
+    # Якщо усі спроби були невдалі:
+    return 'Error: Failed to fetch the URL after multiple retries.'
     
 
 def parse_page(url, path):
@@ -436,6 +463,9 @@ def parse_page(url, path):
 
 
 def main():
+    logging.basicConfig(filename='parser_errors.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.error(f'Error: {e}')
+
     # І тут усе генерується динамічно...
     # url = 'https://www.atbmarket.com/catalog/molocni-produkti-ta-ajca'
     # price_element = scrape_product_price_atb(url)
