@@ -10,14 +10,14 @@ from pathlib import Path
 
 
 
-# Тут ще можна пошукати нові магазини:
-#     https://www.fozzy.ua/ua/
+# Ще один магазин (стат чи динамо?..):
+    # https://fozzyshop.ua
 
-# Завдання 1: Прибери зайві коментарі та код
+# +  Завдання 1: Прибери зайві коментарі та код
 
 # Завдання 2: Перевір усі виключні ситуації, які прописав, зімітувавши їх
 
-# Завдання 3: Об'єднати два різні коди парсингу для динамічних та статичних сайтів з допомогою декоратора
+# Завдання 3: Об'єднай два різні коди парсингу для динамічних та статичних сайтів з допомогою декоратора
 
 
 def is_connected():
@@ -57,39 +57,37 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
         str: The HTML content of the page, or an error message if an exception occurs.
     """
     
-    if is_connected:  # Якщо є інтернет-зв'язок
-        
-        # Повтори при таймаутах
-        for attempt in range(retries):
-            try:
-                # Set a timeout to prevent handling
-                response = requests.get(url, timeout=timeout)
-                response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
-                return response.text  # Успішний запит, - Повертаємо контент
-            
-            except requests.exceptions.Timeout:
-                # Лише логуємо помилку, та повторюємо спробу
-                logging.error(f"Attempt {attempt + 1}: Request timed out for {url}")  # return 'Error: The request timed out.'
-
-            except requests.exceptions.ConnectionError:
-                logging.error(f"Attempt {attempt + 1}: Connection error for {url}")   # return 'Error: A connection error occured.'
-            
-            except requests.exceptions.HTTPError as e:
-                logging.error(f"Attempt {attempt + 1}: HTTP error {response.status_code}")
-                # Повертаємо помилку одразу, бо це не мережевий збій
-                return f'Error: HTTP error occured. Status code: {response.status_code}'
-            
-            except requests.exceptions.RequestException as e:
-                # Catch-all for other request-related errors
-                logging.error(f"Attempt {attempt + 1}: Unexpected request error: {e}")
-                time.sleep(2 ** attempt)  #  Покрокове збільшення затримки, - задля уникнення блокування сервером
-                return f'Error: An unexpected error occurred: {e}'
-            
-        # Якщо усі спроби були невдалі:
-        return 'Error: Failed to fetch the URL after multiple retries.'
-    
-    else:
+    if not is_connected():  # Якщо нема інтернет-зв'язку
         return 'Error: No internet connection'
+
+    # Повтори при таймаутах
+    for attempt in range(retries):
+        try:
+            # Set a timeout to prevent handling
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+            return response.text  # Успішний запит, - Повертаємо контент
+        
+        except requests.exceptions.Timeout:
+            # Лише логуємо помилку, та повторюємо спробу
+            logging.error(f"Attempt {attempt + 1}: Request timed out for {url}")  # return 'Error: The request timed out.'
+
+        except requests.exceptions.ConnectionError:
+            logging.error(f"Attempt {attempt + 1}: Connection error for {url}")   # return 'Error: A connection error occured.'
+        
+        except requests.exceptions.HTTPError as e:
+            logging.error(f"Attempt {attempt + 1}: HTTP error {response.status_code}")
+            # Повертаємо помилку одразу, бо це не мережевий збій
+            return f'Error: HTTP error occured. Status code: {response.status_code}'
+        
+        except requests.exceptions.RequestException as e:
+            # Catch-all for other request-related errors
+            logging.error(f"Attempt {attempt + 1}: Unexpected request error: {e}")
+            time.sleep(2 ** attempt)  #  Покрокове збільшення затримки, - задля уникнення блокування сервером
+            return f'Error: An unexpected error occurred: {e}'
+        
+    # Якщо усі спроби були невдалі:
+    return 'Error: Failed to fetch the URL after multiple retries.'
         
 
 def parse_page(url, path):
@@ -102,7 +100,8 @@ def parse_page(url, path):
     Returns:
         str: The extracted content or an error message.
     """
-    html_content = fetch_url_with_retries(url, retries=3, timeout=10)
+    # html_content = fetch_url_with_retries(url, retries=3, timeout=10)
+    html_content = fetch_url_with_retries(url)
     if 'Error:' in html_content:
         # Return error message directly if fetch_page_content failed
         return html_content
@@ -160,9 +159,17 @@ def save_dict_info_to_csv(dict_urls, fname):
 
 
 def main():
-    logging.basicConfig(filename='parser_errors.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+        filename='parser_errors.log',
+        level=logging.ERROR,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
     
     
+    # !!!
+    # Тут теж перевір!
+    # https://fozzyshop.ua
+
     dict_urls_static = {
         'silpo': ['https://silpo.ua/category/molochni-produkty-ta-iaitsia-234', 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.ft-flex.ft-flex-col.ft-item-center.xl\\:ft-flex-row > div'],
         'spar': ['https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash', '#main > div.container_center.clearfix > div > div > div > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price'],
@@ -173,8 +180,8 @@ def main():
     }
 
     dict_urls_dynamic = {
-        # atb
-        # fora
+        # https://www.atbmarket.com/catalog
+        # https://fora.ua/
         'novus': ['https://novus.ua/sales/molochna-produkcija-jajcja.html', '#product-price-4759 > span > span.integer'],
         'varus_1': ['https://varus.ua/rasprodazha?cat=53036', '#category > div.main.section > div.products > div.block > div:nth-child(2) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > ins'],
         'varus_2': ['https://varus.ua/molochni-produkti', '#category > div.main > div.products > div:nth-child(3) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > span'],
@@ -214,3 +221,52 @@ if __name__ == "__main__":
     # nashkraj: 6.2 грн
     # pankovbasko: 55.50
     # megamarket: 49""90 грн
+
+
+    # Сільпо: 
+    #     Молочне та яйця = 2373 карток
+    #     Фрукти та овочі = 3257
+    #     Мясо = 1429
+    #     Риба = 2429
+    #     Готові страви = 4300
+    #     Сири = 1561
+    #     Хліб та випічка = 3661
+    #     Власні (магазинні) марки = 1457
+    #     Лавка традицій (фермерське та власне, ФОП виробництво ) = 1685
+    #     Здорове харчування (орган, веган, безлактоз, безглютен, без цукру, дієтичне) = 2102
+    #     Ковбаси = 3023
+    #     Соуси та спеції = 2859
+    #     Солодощі = 5974
+    #     Снеки та чіпси = 1441
+    #     Кава та чай = 2274
+    #     Напої = 2674
+    #     Заморожена продукція = 1894
+        
+    #         Разом: 44 393
+
+    # megamarket
+    #     Разом: майже 8800
+
+    # eko_market
+    #     Разом: майже 6400
+
+    # !!! nashkraj та Spar - ідентичний дизайн сайтів, навігації тощо)
+    # nashkraj
+    #     Разом: майже 4700
+
+    # Spar
+    #     Разом: майже 2450
+
+    # pankovbasko
+    #     Разом: майже 2000  (молочних, м'ясних, ковбасних та рибних виробів)
+
+    # !!!
+    # В усіх статичних сайтах магазинів,
+    #     Разом: майже 70 тис. (68.800) карток товарів
+
+
+# Які дані збиратиму:
+    # Адреса сторінки каталогу
+    # Назва товару
+    # Стара ціна      (за наявності)
+    # Нова / Поточна ціна
