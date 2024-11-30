@@ -19,6 +19,7 @@ from pathlib import Path
 
 # Завдання 3: Об'єднати два різні коди парсингу для динамічних та статичних сайтів з допомогою декоратора
 
+
 def is_connected():
     # Для перевірки доступності інтернету перед відправленням запиту
     try:
@@ -26,57 +27,6 @@ def is_connected():
         return True
     except OSError:
         return False
-
-
-# =====================================================
-# Теж зайва ф-ція...
-def fetch_html(url):
-    """
-        Завантажує HTML-вміст сторінки.
-        Перевіряє статус HTTP-відповіді (напр., чи немає помилки 403/404).
-    """
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
-    }
-
-    try:
-        response = requests.get(url, headers=headers, timeout=20)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        return response.text
-    except requests.exceptions.RequestException as e:
-        return f'Error fetching {url}: {e}'
-
-# Теж зайва ф-ція...
-def check_parsability(html):
-    """
-        Перевіряє наявність основного контенту, який містить інф-цію про продукти
-    """
-    try:
-        soup = BeautifulSoup(html, 'html.parser')
-        potential_elements = soup.find_all(['ul', 'ol', 'div'], recursive=True, limit=5)
-        if potential_elements:
-            return 'Parsable'  # Є базовий html-контент
-        return 'Likely JS-generated or no content found'
-    except Exception as e:
-        return f'Error parsing HTML: {e}'
-
-# Теж зайва ф-ція...
-def check_bots_protection(html):
-    if 'captcha' in html.lower():
-        return 'Protected by CAPTCHA'
-    elif 'login' in html.lower() or 'sign in' in html.lower():
-        return 'Requires login'
-    return 'No apparent bot protection'
-
-# Теж зайва ф-ція...
-# def check_bots_protection(url):
-#     html = fetch_html(url)
-#     if 'captcha' in html.lower():
-#         return 'Protected by CAPTCHA'
-#     elif 'login' in html.lower() or 'sign in' in html.lower():
-#         return 'Requires login'
-#     return 'No apparent bot protection'
-# =====================================================
 
 
 def save_to_csv(results, fname = 'parsing_res.csv'):
@@ -89,47 +39,10 @@ def save_to_csv(results, fname = 'parsing_res.csv'):
 
     with open(file_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        # writer.writerow(['Name', 'URL', 'Result'])
         writer.writerow(['Name', 'URL', 'Result'])
         for result in results:
             writer.writerow(result)
 
-
-# Теж зайва ф-ція...
-def scrape_product_price(url, path):
-    """
-    Fetches the price of a product from a given store URL.
-
-    Args:
-        url (str): The URL of the product page.
-
-    Returns:
-        str: The price of the product or an error message if not found.
-    """
-    try:
-        # Fetch the HTML content of the page
-        time.sleep(30)
-        response = requests.get(url, timeout=20)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        first_card_soup = soup.select_one(path)
-
-        if first_card_soup:
-            price_element = first_card_soup.text
-            # price_element = first_card_soup
-            if price_element:
-                return price_element.strip()
-            else:
-                return "Price not found on the page"
-        else:
-            return f"Tag not found on the page\nContent of HTML-page:\n\n{soup}"
-
-    except requests.exceptions.RequestException as e:
-        return f"Error fetching the product page: {e}"
-
-# =========================================================
 
 def fetch_url_with_retries(url, retries=3, timeout=10):
     """
@@ -150,31 +63,16 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
         for attempt in range(retries):
             try:
                 # Set a timeout to prevent handling
-                
-                # # headers = {
-                # #     "Content-Type": "application/json",
-                # #     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                # # }
-                # headers = {
-                #     "authority": "www.google.com",
-                #     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-                #     "accept-language": "en-US,en;q=0.9",
-                #     "cache-control": "max-age=0",
-                #     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
-                # }
-
                 response = requests.get(url, timeout=timeout)
                 response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
                 return response.text  # Успішний запит, - Повертаємо контент
             
             except requests.exceptions.Timeout:
                 # Лише логуємо помилку, та повторюємо спробу
-                logging.error(f"Attempt {attempt + 1}: Request timed out for {url}")
-                # return 'Error: The request timed out.'
+                logging.error(f"Attempt {attempt + 1}: Request timed out for {url}")  # return 'Error: The request timed out.'
 
             except requests.exceptions.ConnectionError:
-                logging.error(f"Attempt {attempt + 1}: Connection error for {url}")
-                # return 'Error: A connection error occured.'
+                logging.error(f"Attempt {attempt + 1}: Connection error for {url}")   # return 'Error: A connection error occured.'
             
             except requests.exceptions.HTTPError as e:
                 logging.error(f"Attempt {attempt + 1}: HTTP error {response.status_code}")
@@ -184,8 +82,6 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
             except requests.exceptions.RequestException as e:
                 # Catch-all for other request-related errors
                 logging.error(f"Attempt {attempt + 1}: Unexpected request error: {e}")
-                # if attempt == 2:
-                #     raise e  # Остання спроба
                 time.sleep(2 ** attempt)  #  Покрокове збільшення затримки, - задля уникнення блокування сервером
                 return f'Error: An unexpected error occurred: {e}'
             
@@ -231,8 +127,7 @@ def parse_page(url, path):
         return 'Error: Request timed out'
     
     except requests.exceptions.ConnectionError:
-        # return 'Error: A connection error occured.'
-        return 'Error: Could not connect to server'
+        return 'Error: Could not connect to server'   #  A connection error occured
     
     except requests.exceptions.HTTPError as e:
         return f'Error: HTTP error occured. Status code: {e.response.status_code}'
@@ -248,6 +143,20 @@ def parse_page(url, path):
 
     except Exception as e:
         return f'Error: Failed to parse the page content. Details: {e}'
+
+
+def save_dict_info_to_csv(dict_urls, fname):
+    results = []
+    for key, value in dict_urls.items():
+        url = value[0]
+        path = value[1]
+        tmp_elem = [key, url, parse_page(url, path)]
+        results.append(tmp_elem)
+
+    print('Цикл пройдено')
+    save_to_csv(results, fname)
+    print('Файл збережено')
+
 
 
 def main():
@@ -281,48 +190,18 @@ def main():
         'kishenya_2': ['https://kishenya.ua/vkett/', '#rl-gallery-1 > div:nth-child(1) > a > img']
     }
 
-    results = []
-    for key, value in dict_urls_static.items():
-        url = value[0]
-        path = value[1]
-        tmp_elem = [key, url, parse_page(url, path)]
-        results.append(tmp_elem)
-
-    print('Цикл пройдено')
-    fname_1 = 'parsing_res_static.csv'
-    save_to_csv(results, fname_1)
-    print('Файл збережено')
-
     
-    # results = []
-    # for key, value in dict_urls_dynamic.items():
-    #     url = value[0]
-    #     path = value[1]
-    #     # tmp_str = f'\n{key}: {scrape_product_price(url, path)}\n'
-    #     tmp_str = f'\n{key}: {parse_page(url, path)}\n'
-    #     results.append(tmp_str)
-        # tmp_elem = [key, url, path]
-        # results.append(tmp_elem)
-    #     # print(tmp_str)
-    # print('Цикл пройдено')
-    
-    # fname_2 = 'parsing_res_dynamic.csv'
-    # save_to_csv(results, fname_2)
-    # print('Файл збережено')
+    dict_urls = dict_urls_static
+    fname = 'parsing_res_static.csv'
+    save_dict_info_to_csv(dict_urls, fname)
 
+    dict_urls = dict_urls_dynamic
+    fname = 'parsing_res_dynamic.csv'
+    save_dict_info_to_csv(dict_urls, fname)
 
-    # results = []
-    # for key, value in dict_urls_img.items():
-    #     url = value[0]
-    #     path = value[1]
-    #     tmp_str = f'\n{key}: {scrape_product_price(url, path)}\n'
-    #     results.append(tmp_str)
-        # tmp_elem = [key, url, path]
-        # results.append(tmp_elem)
-    #     print(tmp_str)
-    
-    # fname_3 = 'parsing_res_img.csv'
-    # save_to_csv(results, fname_3)
+    dict_urls = dict_urls_img
+    fname = 'parsing_res_img.csv'
+    save_dict_info_to_csv(dict_urls, fname)
 
     
 if __name__ == "__main__":
