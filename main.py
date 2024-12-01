@@ -29,6 +29,52 @@ def is_connected():
         return False
 
 
+def handle_exception(e, context=""):
+    """
+    Handles exceptions and returns a formatted error message.
+
+    Args:
+        e (Exception): The exception to handle.
+        context (str): Additional context about where the error occurred.
+
+    Returns:
+        str: Formatted error message
+    """
+    if isinstance(e, requests.exceptions.Timeout):
+        error_message = "Error: Request timed out."
+    elif isinstance(e, requests.exceptions.ConnectionError):
+        error_message = "Error: Could not connect to the server."
+    elif isinstance(e, requests.exceptions.HTTPError):
+        error_message = f"Error: HTTP error occurred. Status code: {e.response.status_code if e.response else 'Unknown'}."
+    elif isinstance(e, AttributeError):
+        error_message = f"Error: HTML structure issue - {e}."
+    elif isinstance(e, ValueError):
+        error_message = f"Error: Data issue - {e}."
+    elif isinstance(e, requests.exceptions.RequestException):
+        error_message = f"Error: Unexpected request error - {e}."
+    else:
+        error_message = f"Error: An unexpected error occurred - {e}."
+
+    logging.error(f"{context} {error_message}")
+    return error_message
+
+        # except requests.exceptions.Timeout:
+        #     # Лише логуємо помилку, та повторюємо спробу
+        #     logging.error(f"Attempt {attempt + 1}: Request timed out for {url}")  # return 'Error: The request timed out.'
+
+        # except requests.exceptions.ConnectionError:
+        #     logging.error(f"Attempt {attempt + 1}: Connection error for {url}")   # return 'Error: A connection error occured.'
+        
+        # except requests.exceptions.HTTPError as e:
+        #     logging.error(f"Attempt {attempt + 1}: HTTP error {response.status_code}")
+        #     # Повертаємо помилку одразу, бо це не мережевий збій
+        #     return f'Error: HTTP error occured. Status code: {response.status_code}'
+        
+        # except requests.exceptions.RequestException as e:
+        #     # Catch-all for other request-related errors
+        #     logging.error(f"Attempt {attempt + 1}: Unexpected request error: {e}")
+
+
 def save_to_csv(results, fname = 'parsing_res.csv'):
     """
         Зберігає рез-ти перевірки до CSV для подальшого ан-зу
@@ -68,24 +114,12 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
             response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
             return response.text  # Успішний запит, - Повертаємо контент
         
-        except requests.exceptions.Timeout:
-            # Лише логуємо помилку, та повторюємо спробу
-            logging.error(f"Attempt {attempt + 1}: Request timed out for {url}")  # return 'Error: The request timed out.'
+        except Exception as e:
+            logging.error(f"Attempt {attempt + 1} failed for {url}.")
+            if attempt == retries - 1:  # Last attempt
+                return handle_exception(e, context=f"Fetching URL {url}")
+            time.sleep(2 ** attempt)  #  Покрокове збільшення затримки, - задля уникнення блокування сервером
 
-        except requests.exceptions.ConnectionError:
-            logging.error(f"Attempt {attempt + 1}: Connection error for {url}")   # return 'Error: A connection error occured.'
-        
-        except requests.exceptions.HTTPError as e:
-            logging.error(f"Attempt {attempt + 1}: HTTP error {response.status_code}")
-            # Повертаємо помилку одразу, бо це не мережевий збій
-            return f'Error: HTTP error occured. Status code: {response.status_code}'
-        
-        except requests.exceptions.RequestException as e:
-            # Catch-all for other request-related errors
-            logging.error(f"Attempt {attempt + 1}: Unexpected request error: {e}")
-        time.sleep(2 ** attempt)  #  Покрокове збільшення затримки, - задля уникнення блокування сервером
-            # return f'Error: An unexpected error occurred: {e}'
-        
     # Якщо усі спроби були невдалі:
     return 'Error: Failed to fetch the URL after multiple retries.'
         
@@ -100,26 +134,34 @@ def parse_page(url, path):
     Returns:
         str: The extracted content or an error message.
     """
-    # html_content = fetch_url_with_retries(url, retries=3, timeout=10)
     html_content = fetch_url_with_retries(url)
     if 'Error:' in html_content:
-        # Return error message directly if fetch_page_content failed
-        return html_content
+        return html_content   # Return error message directly if fetch_page_content failed
     
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
+        elem = soup.select_one(path)
 
-        # Логіка парсингу для більшості статичних сайтів з наданого списку
-        if soup.select_one(path):
-            result = soup.select_one(path).text
+        if not elem:
+            raise AttributeError(f"Element with path '{path}' not found.")
+        content = elem.text.strip()
+        if not content:
+            raise ValueError("Extracted content is empty.")
+        return content
+    except Exception as e:
+        return handle_exception(e, context=f"Parsing URL {url}")
 
-            if result:
-                return result.strip()
-            else:
-                raise ValueError('Extracted data is empty')  # return "Price not found on the page"
+        # # Логіка парсингу для більшості статичних сайтів з наданого списку
+        # if soup.select_one(path):
+        #     result = soup.select_one(path).text
+
+        #     if result:
+        #         return result.strip()
+        #     else:
+        #         raise ValueError('Extracted data is empty')  # return "Price not found on the page"
         
-        else:
-            raise AttributeError(f'HTML element not found\nContent of HTML-page:\n\n{soup}')   # return "Tag not found on the page\nContent of HTML-page:\n\n{soup}"
+        # else:
+        #     raise AttributeError(f'HTML element not found\nContent of HTML-page:\n\n{soup}')   # return "Tag not found on the page\nContent of HTML-page:\n\n{soup}"
 
 
     except requests.exceptions.Timeout:
