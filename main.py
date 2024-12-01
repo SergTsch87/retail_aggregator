@@ -83,8 +83,8 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
         except requests.exceptions.RequestException as e:
             # Catch-all for other request-related errors
             logging.error(f"Attempt {attempt + 1}: Unexpected request error: {e}")
-            time.sleep(2 ** attempt)  #  Покрокове збільшення затримки, - задля уникнення блокування сервером
-            return f'Error: An unexpected error occurred: {e}'
+        time.sleep(2 ** attempt)  #  Покрокове збільшення затримки, - задля уникнення блокування сервером
+            # return f'Error: An unexpected error occurred: {e}'
         
     # Якщо усі спроби були невдалі:
     return 'Error: Failed to fetch the URL after multiple retries.'
