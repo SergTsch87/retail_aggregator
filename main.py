@@ -174,8 +174,13 @@ def load_urls_from_file(file_path):
 
 
 def main():
+    # Визначаємо шлях до файлу main.py
+    fname = 'parser_errors.log'
+    current_dir = Path(__file__).parent  # Папка, в якій знаходиться наш скрипт
+    file_path = current_dir / fname  # Задаємо ім'я та шлях до файлу
+    
     logging.basicConfig(
-        filename='parser_errors.log',
+        filename=file_path,
         level=logging.ERROR,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
