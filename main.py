@@ -30,7 +30,7 @@ def is_connected():
 
 
 def get_file_path(fname):
-    # Визначаємо шлях до файлу main.py
+    # Визначаємо повний шлях до файлу fname
     current_dir = Path(__file__).parent  # Папка, в якій знаходиться наш скрипт
     file_path = current_dir / fname  # Задаємо ім'я та шлях до файлу
     return file_path
@@ -87,10 +87,8 @@ def save_to_csv(results, fname = 'parsing_res.csv'):
     """
         Зберігає рез-ти перевірки до CSV для подальшого ан-зу
     """
-    # Визначаємо шлях до файлу main.py
+    # Повний шлях до файлу fname
     file_path = get_file_path(fname)
-    # current_dir = Path(__file__).parent  # Папка, в якій знаходиться наш скрипт
-    # file_path = current_dir / fname  # Задаємо ім'я та шлях до файлу
 
     with open(file_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
@@ -183,12 +181,9 @@ def load_urls_from_file(file_path):
 
 
 def main():
-    # get_file_path()
-    # Визначаємо шлях до файлу main.py
+    # Повний шлях до файлу fname
     fname = 'parser_errors.log'
     file_path = get_file_path(fname)
-    # current_dir = Path(__file__).parent  # Папка, в якій знаходиться наш скрипт
-    # file_path = current_dir / fname  # Задаємо ім'я та шлях до файлу
     
     logging.basicConfig(
         filename=file_path,
