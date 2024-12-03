@@ -66,22 +66,6 @@ def handle_exception(e, context=""):
     logging.error(f"{context} {error_message}")
     return error_message
 
-        # except requests.exceptions.Timeout:
-        #     # Лише логуємо помилку, та повторюємо спробу
-        #     logging.error(f"Attempt {attempt + 1}: Request timed out for {url}")  # return 'Error: The request timed out.'
-
-        # except requests.exceptions.ConnectionError:
-        #     logging.error(f"Attempt {attempt + 1}: Connection error for {url}")   # return 'Error: A connection error occured.'
-        
-        # except requests.exceptions.HTTPError as e:
-        #     logging.error(f"Attempt {attempt + 1}: HTTP error {response.status_code}")
-        #     # Повертаємо помилку одразу, бо це не мережевий збій
-        #     return f'Error: HTTP error occured. Status code: {response.status_code}'
-        
-        # except requests.exceptions.RequestException as e:
-        #     # Catch-all for other request-related errors
-        #     logging.error(f"Attempt {attempt + 1}: Unexpected request error: {e}")
-
 
 def save_to_csv(results, fname = 'parsing_res.csv'):
     """
