@@ -139,14 +139,36 @@ def parse_page(url_page_category,
     
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
+
         elem_val_curr_price = soup.select_one(path_current_price)
+        elem_val_path_old_price = soup.select_one(path_old_price)
+        elem_val_url_card = soup.select_one(url_card)
+        elem_val_path_title = soup.select_one(path_title)
 
         if not elem_val_curr_price:
             raise AttributeError(f"Value current price with path '{path_current_price}' not found.")
+        if not elem_val_path_old_price:
+            raise AttributeError(f"Value old price with path '{path_old_price}' not found.")
+        if not elem_val_url_card:
+            raise AttributeError(f"URL card with path '{url_card}' not found.")
+        if not elem_val_path_title:
+            raise AttributeError(f"Value title with path '{path_title}' not found.")
+        
         val_current_price = elem_val_curr_price.text.strip()
+        val_path_old_price = elem_val_path_old_price.text.strip()
+        val_url_card = elem_val_url_card.text.strip()
+        val_path_title = elem_val_path_title.text.strip()
+
         if not val_current_price:
             raise ValueError("Extracted value current price is empty.")
-        return val_current_price
+        if not val_path_old_price:
+            raise ValueError("Extracted value old price is empty.")
+        if not val_url_card:
+            raise ValueError("Extracted URL card is empty.")
+        if not val_path_title:
+            raise ValueError("Extracted value title is empty.")
+        
+        return val_current_price, val_path_old_price, val_url_card, val_path_title
     except Exception as e:
         return handle_exception(e, context=f"Parsing URL {url_page_category}")
 
