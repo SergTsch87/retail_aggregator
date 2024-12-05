@@ -118,66 +118,68 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
 
     # Якщо усі спроби були невдалі:
     return 'Error: Failed to fetch the URL after multiple retries.'
-        
 
-# def parse_page(url, path):
-def parse_page(url_page_category,
-                path_current_price,
-                path_old_price,
-                url_card,
-                path_title):
-    """
-    Parses a webpage and extracts content using BeautifulSoup.
 
-    Args:
-        url (str): The URL of the webpage.
+# # =============================================
+# # Поки теж зайвий код
+# # def parse_page(url, path):
+# def parse_page(url_page_category,
+#                 path_current_price,
+#                 path_old_price,
+#                 url_card,
+#                 path_title):
+#     """
+#     Parses a webpage and extracts content using BeautifulSoup.
 
-    Returns:
-        str: The extracted content or an error message.
-    """
-    html_content = fetch_url_with_retries(url_page_category)
-    if 'Error:' in html_content:
-        # # Log error and return None
-        # logging.error(f"Error while fetching URL {url_page_category}: {html_content}")
-        # return None
-        return html_content   # Return error message directly if fetch_page_content failed
+#     Args:
+#         url (str): The URL of the webpage.
+
+#     Returns:
+#         str: The extracted content or an error message.
+#     """
+#     html_content = fetch_url_with_retries(url_page_category)
+#     if 'Error:' in html_content:
+#         # # Log error and return None
+#         # logging.error(f"Error while fetching URL {url_page_category}: {html_content}")
+#         # return None
+#         return html_content   # Return error message directly if fetch_page_content failed
     
-    try:
-        soup = BeautifulSoup(html_content, 'html.parser')
+#     try:
+#         soup = BeautifulSoup(html_content, 'html.parser')
 
-        # elem_val_curr_price = soup.select_one(path_current_price)
-        # elem_val_path_old_price = soup.select_one(path_old_price)
-        # elem_val_url_card = soup.select_one(url_card)
-        # elem_val_path_title = soup.select_one(path_title)
+#         # elem_val_curr_price = soup.select_one(path_current_price)
+#         # elem_val_path_old_price = soup.select_one(path_old_price)
+#         # elem_val_url_card = soup.select_one(url_card)
+#         # elem_val_path_title = soup.select_one(path_title)
 
-        # if not elem_val_curr_price:
-        #     raise AttributeError(f"Value current price with path '{path_current_price}' not found.")
-        # if not elem_val_path_old_price:
-        #     raise AttributeError(f"Value old price with path '{path_old_price}' not found.")
-        # if not elem_val_url_card:
-        #     raise AttributeError(f"URL card with path '{url_card}' not found.")
-        # if not elem_val_path_title:
-        #     raise AttributeError(f"Value title with path '{path_title}' not found.")
+#         # if not elem_val_curr_price:
+#         #     raise AttributeError(f"Value current price with path '{path_current_price}' not found.")
+#         # if not elem_val_path_old_price:
+#         #     raise AttributeError(f"Value old price with path '{path_old_price}' not found.")
+#         # if not elem_val_url_card:
+#         #     raise AttributeError(f"URL card with path '{url_card}' not found.")
+#         # if not elem_val_path_title:
+#         #     raise AttributeError(f"Value title with path '{path_title}' not found.")
         
-        # val_current_price = elem_val_curr_price.text.strip()
-        # val_path_old_price = elem_val_path_old_price.text.strip()
-        # val_url_card = elem_val_url_card.text.strip()
-        # val_path_title = elem_val_path_title.text.strip()
+#         # val_current_price = elem_val_curr_price.text.strip()
+#         # val_path_old_price = elem_val_path_old_price.text.strip()
+#         # val_url_card = elem_val_url_card.text.strip()
+#         # val_path_title = elem_val_path_title.text.strip()
 
-        # if not val_current_price:
-        #     raise ValueError("Extracted value current price is empty.")
-        # if not val_path_old_price:
-        #     raise ValueError("Extracted value old price is empty.")
-        # if not val_url_card:
-        #     raise ValueError("Extracted URL card is empty.")
-        # if not val_path_title:
-        #     raise ValueError("Extracted value title is empty.")
+#         # if not val_current_price:
+#         #     raise ValueError("Extracted value current price is empty.")
+#         # if not val_path_old_price:
+#         #     raise ValueError("Extracted value old price is empty.")
+#         # if not val_url_card:
+#         #     raise ValueError("Extracted URL card is empty.")
+#         # if not val_path_title:
+#         #     raise ValueError("Extracted value title is empty.")
         
-        # return [val_current_price, val_path_old_price, val_url_card, val_path_title]
+#         # return [val_current_price, val_path_old_price, val_url_card, val_path_title]
     
-    except Exception as e:
-        return handle_exception(e, context=f"Parsing URL {url_page_category}")
-
+#     except Exception as e:
+#         return handle_exception(e, context=f"Parsing URL {url_page_category}")
+# # ======================================
 
 def parse_product_card(html_card):
     # Extract Data from a Single Product Card
@@ -197,6 +199,26 @@ def parse_page(html_page):
     soup = BeautifulSoup(html_page, 'html.parser')
     product_cards = soup.find_all('div', class_="products-list__item")  # for Silpo
     return [parse_product_card(str(card)) for card in product_cards]
+
+
+def fetch_all_pages(base_url, start_page=1):
+    # Iterate Through Pages
+    # Add logic to parse multiple pages using pagination
+    page_number = start_page
+    all_pages_data = {}
+    
+    while True:
+        url = f"{base_url}?page={page_number}"
+        html = fetch_url_with_retries(url, retries=3, timeout=10)
+        products = parse_page(html)
+    
+        if not products:  # Stop when no more products
+            break
+    
+        all_pages_data[f'page_{page_number}'] = products
+        page_number += 1
+    
+    return all_pages_data
 
 
 # def create_dict_of_data(dict_urls):
