@@ -140,58 +140,78 @@ def parse_page(url_page_category,
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
 
-        elem_val_curr_price = soup.select_one(path_current_price)
-        elem_val_path_old_price = soup.select_one(path_old_price)
-        elem_val_url_card = soup.select_one(url_card)
-        elem_val_path_title = soup.select_one(path_title)
+        # elem_val_curr_price = soup.select_one(path_current_price)
+        # elem_val_path_old_price = soup.select_one(path_old_price)
+        # elem_val_url_card = soup.select_one(url_card)
+        # elem_val_path_title = soup.select_one(path_title)
 
-        if not elem_val_curr_price:
-            raise AttributeError(f"Value current price with path '{path_current_price}' not found.")
-        if not elem_val_path_old_price:
-            raise AttributeError(f"Value old price with path '{path_old_price}' not found.")
-        if not elem_val_url_card:
-            raise AttributeError(f"URL card with path '{url_card}' not found.")
-        if not elem_val_path_title:
-            raise AttributeError(f"Value title with path '{path_title}' not found.")
+        # if not elem_val_curr_price:
+        #     raise AttributeError(f"Value current price with path '{path_current_price}' not found.")
+        # if not elem_val_path_old_price:
+        #     raise AttributeError(f"Value old price with path '{path_old_price}' not found.")
+        # if not elem_val_url_card:
+        #     raise AttributeError(f"URL card with path '{url_card}' not found.")
+        # if not elem_val_path_title:
+        #     raise AttributeError(f"Value title with path '{path_title}' not found.")
         
-        val_current_price = elem_val_curr_price.text.strip()
-        val_path_old_price = elem_val_path_old_price.text.strip()
-        val_url_card = elem_val_url_card.text.strip()
-        val_path_title = elem_val_path_title.text.strip()
+        # val_current_price = elem_val_curr_price.text.strip()
+        # val_path_old_price = elem_val_path_old_price.text.strip()
+        # val_url_card = elem_val_url_card.text.strip()
+        # val_path_title = elem_val_path_title.text.strip()
 
-        if not val_current_price:
-            raise ValueError("Extracted value current price is empty.")
-        if not val_path_old_price:
-            raise ValueError("Extracted value old price is empty.")
-        if not val_url_card:
-            raise ValueError("Extracted URL card is empty.")
-        if not val_path_title:
-            raise ValueError("Extracted value title is empty.")
+        # if not val_current_price:
+        #     raise ValueError("Extracted value current price is empty.")
+        # if not val_path_old_price:
+        #     raise ValueError("Extracted value old price is empty.")
+        # if not val_url_card:
+        #     raise ValueError("Extracted URL card is empty.")
+        # if not val_path_title:
+        #     raise ValueError("Extracted value title is empty.")
         
-        return val_current_price, val_path_old_price, val_url_card, val_path_title
+        # return [val_current_price, val_path_old_price, val_url_card, val_path_title]
+    
     except Exception as e:
         return handle_exception(e, context=f"Parsing URL {url_page_category}")
 
 
-def save_dict_info_to_csv(dict_urls, fname):
-    results = []
-    for key, value in dict_urls.items():
-        url_page_category = value['url_page_category']
-        path_current_price = value['path_current_price']
-        path_old_price = value['path_old_price']
-        url_card = value['url_card']
-        path_title = value['path_title']
-        # tmp_elem = [key, url, parse_page(url, path)]
-        tmp_elem = [key, url_page_category, parse_page(url_page_category,
-                                                       path_current_price,
-                                                       path_old_price,
-                                                       url_card,
-                                                       path_title)]
-        results.append(tmp_elem)
+# def create_dict_of_data(dict_urls):
+#     dict_values = {}
+#     dict_values['silpo'] = {}
 
-    print('Цикл пройдено')
-    save_to_csv(results, fname)
-    print('Файл збережено')
+#     val_current_price, val_path_old_price, val_url_card, val_path_title = parse_page(url_page_category,
+#                                                        path_current_price,
+#                                                        path_old_price,
+#                                                        url_card,
+#                                                        path_title)
+    
+#     # !!!
+#     # Спершу треба завантажити дані (створити відповідний словник на 5..10 Мб), а потім вже їх зберігати!
+    
+#     # for key, value in dict_urls.items():
+#     #     url_page_category = value['url_page_category']
+#     #     path_current_price = value['path_current_price']
+#     #     path_old_price = value['path_old_price']
+#     #     url_card = value['url_card']
+#     #     path_title = value['path_title']
+#     #     tmp_elem = [key, url_page_category, parse_page(url_page_category,
+#     #                                                    path_current_price,
+#     #                                                    path_old_price,
+#     #                                                    url_card,
+#     #                                                    path_title)]
+        
+#     #     dict_values[key][url_page_category] = url_page_category
+#     #     dict_values[key][path_current_price] = path_current_price
+#     #     dict_values[key][path_old_price] = path_old_price
+#     #     dict_values[key][url_card] = url_card
+#     #     dict_values[key][path_title] = path_title
+    
+    
+#     # !!!
+#     # Цей блок коду залиш для іншої ф-ції!
+    
+#     # print('Цикл пройдено')
+#     # save_to_csv(dict_values, fname)
+#     # print('Файл збережено')
 
 
 def load_urls_from_file(file_path):
@@ -246,43 +266,53 @@ def main():
                     "old_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.product-card-price__old > div.ft-line-through.ft-text-black-87.ft-typo-14-regular.xl\:ft-typo',
                     "url_card": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a',
                     "title": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.product-card__title'
-        },
-        'spar': {
-                    "url_page_category": 'https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash',
-                    "current_price": '#main > div.container_center.clearfix > div > div > div > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price',
-                    "old_price": '',
-                    "url_card": '',
-                    "title": ''
-        },
-        'eko_market': {
-                    "url_page_category": 'https://eko.zakaz.ua/uk/categories/dairy-and-eggs-ekomarket/',
-                    "current_price": '#PageWrapBody_desktopMode > div.jsx-b98800c5ccb0b885.ProductsBox > div > div:nth-child(1) > div > a > span > div.jsx-cdc81c93bd075911.ProductTile__details > div.jsx-cdc81c93bd075911.ProductTile__prices > div > span.jsx-9c4923764db53380.Price__value_caption',
-                    "old_price": '',
-                    "url_card": '',
-                    "title": ''
-        },
-        'nashkraj': {
-                    "url_page_category": 'https://shop.nashkraj.ua/lutsk/category/molokoprodukti-yaytsya',
-                    "current_price": '#main > div.container_center.clearfix > div > div > div.col-lg-9.col-md-9.col-sm-8.col-xs-6.pad_0.media_870 > div:nth-child(3) > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price',
-                    "old_price": '',
-                    "url_card": '',
-                    "title": ''
-        },
-        'pankovbasko': {
-                    "url_page_category": 'https://pankovbasko.com/ua/catalog/molochnaya-produkchuya/all',
-                    "current_price": '#content > ul.row.block-grid.list-unstyled > li:nth-child(1) > div > div.product-price > span.price',
-                    "old_price": '',
-                    "url_card": '',
-                    "title": ''
-        },
-        'megamarket': {
-                    "url_page_category": 'https://megamarket.ua/catalog/moloko',
-                    "current_price": 'body > div.main_wrapper.grids > div.main > div.main_row > div > ul > li:nth-child(1) > div.product_info > form > div.price_block > div > div.price.cp',
-                    "old_price": '',
-                    "url_card": '',
-                    "title": ''
         }
     }
+    
+    # dict_urls_static = {
+    #     'silpo': {
+    #                 "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
+    #                 "current_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.ft-flex.ft-flex-col.ft-item-center.xl\\:ft-flex-row > div',
+    #                 "old_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.product-card-price__old > div.ft-line-through.ft-text-black-87.ft-typo-14-regular.xl\:ft-typo',
+    #                 "url_card": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a',
+    #                 "title": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.product-card__title'
+    #     },
+    #     'spar': {
+    #                 "url_page_category": 'https://shop.spar.ua/rivne/section/Populyarni_tovary_Varash',
+    #                 "current_price": '#main > div.container_center.clearfix > div > div > div > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price',
+    #                 "old_price": '',
+    #                 "url_card": '',
+    #                 "title": ''
+    #     },
+    #     'eko_market': {
+    #                 "url_page_category": 'https://eko.zakaz.ua/uk/categories/dairy-and-eggs-ekomarket/',
+    #                 "current_price": '#PageWrapBody_desktopMode > div.jsx-b98800c5ccb0b885.ProductsBox > div > div:nth-child(1) > div > a > span > div.jsx-cdc81c93bd075911.ProductTile__details > div.jsx-cdc81c93bd075911.ProductTile__prices > div > span.jsx-9c4923764db53380.Price__value_caption',
+    #                 "old_price": '',
+    #                 "url_card": '',
+    #                 "title": ''
+    #     },
+    #     'nashkraj': {
+    #                 "url_page_category": 'https://shop.nashkraj.ua/lutsk/category/molokoprodukti-yaytsya',
+    #                 "current_price": '#main > div.container_center.clearfix > div > div > div.col-lg-9.col-md-9.col-sm-8.col-xs-6.pad_0.media_870 > div:nth-child(3) > div.gallery.stock > div:nth-child(1) > div.teaser > div.info > div.price.clearfix > span.nice_price',
+    #                 "old_price": '',
+    #                 "url_card": '',
+    #                 "title": ''
+    #     },
+    #     'pankovbasko': {
+    #                 "url_page_category": 'https://pankovbasko.com/ua/catalog/molochnaya-produkchuya/all',
+    #                 "current_price": '#content > ul.row.block-grid.list-unstyled > li:nth-child(1) > div > div.product-price > span.price',
+    #                 "old_price": '',
+    #                 "url_card": '',
+    #                 "title": ''
+    #     },
+    #     'megamarket': {
+    #                 "url_page_category": 'https://megamarket.ua/catalog/moloko',
+    #                 "current_price": 'body > div.main_wrapper.grids > div.main > div.main_row > div > ul > li:nth-child(1) > div.product_info > form > div.price_block > div > div.price.cp',
+    #                 "old_price": '',
+    #                 "url_card": '',
+    #                 "title": ''
+    #     }
+    # }
 
 
     dict_urls_dynamic = {
@@ -363,21 +393,25 @@ def main():
         }
     }
 
+
+# # ============== BEGIN =================================
+# # !!!
+# # Код, який може бути зайвим
     
-    dict_urls = dict_urls_static
-    # if ('\\' not in dict_urls) and ('\' in dict_urls):
-    #     pass <треба замінити '\' на '\\'>
-    fname = 'parsing_res_static.csv'
-    save_dict_info_to_csv(dict_urls, fname)
+#     dict_urls = dict_urls_static
+#     # if ('\\' not in dict_urls) and ('\' in dict_urls):
+#     #     pass <треба замінити '\' на '\\'>
+#     fname = 'parsing_res_static.csv'
+#     create_dict_of_data(dict_urls)
 
-    dict_urls = dict_urls_dynamic
-    fname = 'parsing_res_dynamic.csv'
-    save_dict_info_to_csv(dict_urls, fname)
+#     dict_urls = dict_urls_dynamic
+#     fname = 'parsing_res_dynamic.csv'
+#     create_dict_of_data(dict_urls)
 
-    dict_urls = dict_urls_img
-    fname = 'parsing_res_img.csv'
-    save_dict_info_to_csv(dict_urls, fname)
-
+#     dict_urls = dict_urls_img
+#     fname = 'parsing_res_img.csv'
+#     create_dict_of_data(dict_urls)
+# # ============== THE END =================================
     
 if __name__ == "__main__":
     main()
