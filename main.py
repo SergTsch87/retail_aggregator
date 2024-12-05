@@ -101,6 +101,11 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
     for attempt in range(retries):
         try:
             # Set a timeout to prevent handling
+            
+            # !!! Встав свій User-Agent !
+            # headers={"User-Agent": "your-user-agent"}
+            # response = requests.get(url, timeout=timeout, headers=headers)
+            
             response = requests.get(url, timeout=timeout)
             response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
             return response.text  # Успішний запит, - Повертаємо контент
@@ -172,6 +177,26 @@ def parse_page(url_page_category,
     
     except Exception as e:
         return handle_exception(e, context=f"Parsing URL {url_page_category}")
+
+
+def parse_product_card(html_card):
+    # Extract Data from a Single Product Card
+    soup = BeautifulSoup(html_card, 'html.parser')
+    return {  # for Silpo
+        "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
+        "current_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.ft-flex.ft-flex-col.ft-item-center.xl\\:ft-flex-row > div',
+        "old_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.product-card-price__old > div.ft-line-through.ft-text-black-87.ft-typo-14-regular.xl\:ft-typo',
+        "url_card": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a',
+        "title": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.product-card__title'
+    }
+
+
+def parse_page(html_page):
+    # Extract All Product Cards on a Page
+    # Parse all cards in a container.
+    soup = BeautifulSoup(html_page, 'html.parser')
+    product_cards = soup.find_all('div', class_="products-list__item")  # for Silpo
+    return [parse_product_card(str(card)) for card in product_cards]
 
 
 # def create_dict_of_data(dict_urls):
