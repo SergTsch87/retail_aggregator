@@ -184,12 +184,19 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
 def parse_product_card(html_card):
     # Extract Data from a Single Product Card
     soup = BeautifulSoup(html_card, 'html.parser')
+    old_price = soup.find("div", class_="ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo") #.get_text(strip=True)
+    
+    if not old_price:
+        old_price = ''
+    else:
+        old_price = old_price.get_text(strip=True)
+
     return {  # for Silpo
         "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
-        "current_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.ft-flex.ft-flex-col.ft-item-center.xl\\:ft-flex-row > div',
-        "old_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.product-card-price__old > div.ft-line-through.ft-text-black-87.ft-typo-14-regular.xl\:ft-typo',
-        "url_card": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a',
-        "title": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.product-card__title'
+        "current_price": soup.find("div", class_="ft-whitespace-nowrap ft-text-22 ft-font-bold").get_text(strip=True),
+        "old_price": old_price,
+        "url_card": soup.find("a").get("href"),
+        "title": soup.find("div", class_="product-card__title").get_text(strip=True)
     }
 
 
@@ -315,15 +322,15 @@ def main():
 # url_card
 # title
 
-    dict_urls_static = {
-        'silpo': {
-                    "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
-                    "current_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.ft-flex.ft-flex-col.ft-item-center.xl\\:ft-flex-row > div',
-                    "old_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.product-card-price__old > div.ft-line-through.ft-text-black-87.ft-typo-14-regular.xl\:ft-typo',
-                    "url_card": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a',
-                    "title": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.product-card__title'
-        }
-    }
+    # dict_urls_static = {
+    #     'silpo': {
+    #                 "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
+    #                 "current_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.ft-flex.ft-flex-col.ft-item-center.xl\\:ft-flex-row > div',
+    #                 "old_price": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.ft-mb-8.product-card-price > div.product-card-price__old > div.ft-line-through.ft-text-black-87.ft-typo-14-regular.xl\\:ft-typo',
+    #                 "url_card": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a',
+    #                 "title": 'body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a > div.product-card__body > div.product-card__title'
+    #     }
+    # }
     
     # dict_urls_static = {
     #     'silpo': {
@@ -371,83 +378,83 @@ def main():
     # }
 
 
-    dict_urls_dynamic = {
-        # https://www.atbmarket.com/catalog
-        # https://fora.ua/
-        'novus': {
-            "url_page_category": 'https://novus.ua/sales/molochna-produkcija-jajcja.html',
-            "current_price": '#product-price-4759 > span > span.integer',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        },
-        'varus_1': {
-            "url_page_category": 'https://varus.ua/rasprodazha?cat=53036',
-            "current_price": '#category > div.main.section > div.products > div.block > div:nth-child(2) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > ins',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        },
-        'varus_2': {
-            "url_page_category": 'https://varus.ua/molochni-produkti',
-            "current_price": '#category > div.main > div.products > div:nth-child(3) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > span',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        },
-        'metro': {
-            "url_page_category": 'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F',
-            "current_price": '#main > div > div.content-container > div:nth-child(2) > div.mfcss.mfcss_wrapper > div.fixed-width-container > div > div > div:nth-child(2) > div > div.col-lg-9 > div.mfcss_card-article-2--grid-container-flex > span:nth-child(1) > div > div > div.bottom-part > div > div.price-display-main-row > span.primary.promotion.volume-discount > span > span',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        },
-        'velmart': {
-            "url_page_category": 'https://velmart.ua/product-of-week/',
-            "current_price": '#main > div > div > div > section.elementor-section.elementor-top-section.elementor-element.elementor-element-ecfc4c.elementor-section-stretched.elementor-section-boxed.elementor-section-height-default.elementor-section-height-default.jet-parallax-section > div.elementor-container.elementor-column-gap-default > div > div > div > div > div > div > div > div > div:nth-child(1) > div > h5 > a',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        },
-        'zatak': {
-            "url_page_category": 'https://zatak.org.ua/categories/61f84a85-5d59-444f-9ab6-b2d83b57f2c5',
-            "current_price": '#main-goods-list-container > div > div.goods-list__container.noBreadcrumbs > app-goods-list-container > div > div.goods-container__goods > app-goods-list > div.goods-list.ng-star-inserted > div:nth-child(1) > app-goods-list-item > div > app-goods-list-item-template > div.goods-list-item__body > div > p.goods-list-item__price-value',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        },
-        'myasnakorzyna': {
-            "url_page_category": 'https://myasnakorzyna.net.ua/catalog',
-            "current_price": '#main > div > section > div > div.layout-box__catalog > div.layout-box__catalog-content > div:nth-child(1) > div.price > div',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        },
-        'kopiyka': {
-            "url_page_category": 'https://my.kopeyka.com.ua/shares/category/5?name=%D0%9C%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%20%D0%AF%D0%B9%D1%86%D1%8F',
-            "current_price": 'body > app > wrapper > main > div > share > div > div:nth-child(2) > products > div > div > div:nth-child(1) > div.product-prices > div > div.product-price-new',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        }
-    }
+    # dict_urls_dynamic = {
+    #     # https://www.atbmarket.com/catalog
+    #     # https://fora.ua/
+    #     'novus': {
+    #         "url_page_category": 'https://novus.ua/sales/molochna-produkcija-jajcja.html',
+    #         "current_price": '#product-price-4759 > span > span.integer',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     },
+    #     'varus_1': {
+    #         "url_page_category": 'https://varus.ua/rasprodazha?cat=53036',
+    #         "current_price": '#category > div.main.section > div.products > div.block > div:nth-child(2) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > ins',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     },
+    #     'varus_2': {
+    #         "url_page_category": 'https://varus.ua/molochni-produkti',
+    #         "current_price": '#category > div.main > div.products > div:nth-child(3) > div > div:nth-child(1) > div > div.sf-product-card__block > div > div > span',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     },
+    #     'metro': {
+    #         "url_page_category": 'https://shop.metro.ua/shop/category/%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8/%D0%BC%D0%BE%D0%BB%D0%BE%D1%87%D0%BD%D1%96-%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%D0%B8-%D1%82%D0%B0-%D1%8F%D0%B9%D1%86%D1%8F',
+    #         "current_price": '#main > div > div.content-container > div:nth-child(2) > div.mfcss.mfcss_wrapper > div.fixed-width-container > div > div > div:nth-child(2) > div > div.col-lg-9 > div.mfcss_card-article-2--grid-container-flex > span:nth-child(1) > div > div > div.bottom-part > div > div.price-display-main-row > span.primary.promotion.volume-discount > span > span',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     },
+    #     'velmart': {
+    #         "url_page_category": 'https://velmart.ua/product-of-week/',
+    #         "current_price": '#main > div > div > div > section.elementor-section.elementor-top-section.elementor-element.elementor-element-ecfc4c.elementor-section-stretched.elementor-section-boxed.elementor-section-height-default.elementor-section-height-default.jet-parallax-section > div.elementor-container.elementor-column-gap-default > div > div > div > div > div > div > div > div > div:nth-child(1) > div > h5 > a',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     },
+    #     'zatak': {
+    #         "url_page_category": 'https://zatak.org.ua/categories/61f84a85-5d59-444f-9ab6-b2d83b57f2c5',
+    #         "current_price": '#main-goods-list-container > div > div.goods-list__container.noBreadcrumbs > app-goods-list-container > div > div.goods-container__goods > app-goods-list > div.goods-list.ng-star-inserted > div:nth-child(1) > app-goods-list-item > div > app-goods-list-item-template > div.goods-list-item__body > div > p.goods-list-item__price-value',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     },
+    #     'myasnakorzyna': {
+    #         "url_page_category": 'https://myasnakorzyna.net.ua/catalog',
+    #         "current_price": '#main > div > section > div > div.layout-box__catalog > div.layout-box__catalog-content > div:nth-child(1) > div.price > div',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     },
+    #     'kopiyka': {
+    #         "url_page_category": 'https://my.kopeyka.com.ua/shares/category/5?name=%D0%9C%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%20%D0%AF%D0%B9%D1%86%D1%8F',
+    #         "current_price": 'body > app > wrapper > main > div > share > div > div:nth-child(2) > products > div > div > div:nth-child(1) > div.product-prices > div > div.product-price-new',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     }
+    # }
 
-    dict_urls_img ={
-        'kishenya_1': {
-            "url_page_category": 'https://kishenya.ua/tovar-tyzhnia/',
-            "current_price": '#rl-gallery-1 > div:nth-child(1) > a > img',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        },
-        'kishenya_2': {
-            "url_page_category": 'https://kishenya.ua/vkett/',
-            "current_price": '#rl-gallery-1 > div:nth-child(1) > a > img',
-            "old_price": '',
-            "url_card": '',
-            "title": ''
-        }
-    }
+    # dict_urls_img ={
+    #     'kishenya_1': {
+    #         "url_page_category": 'https://kishenya.ua/tovar-tyzhnia/',
+    #         "current_price": '#rl-gallery-1 > div:nth-child(1) > a > img',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     },
+    #     'kishenya_2': {
+    #         "url_page_category": 'https://kishenya.ua/vkett/',
+    #         "current_price": '#rl-gallery-1 > div:nth-child(1) > a > img',
+    #         "old_price": '',
+    #         "url_card": '',
+    #         "title": ''
+    #     }
+    # }
 
     # Prototype First Point
     # Start with a single product card
