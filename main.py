@@ -449,6 +449,13 @@ def main():
         }
     }
 
+    # Prototype First Point
+    # Start with a single product card
+    url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234?page=1'
+    html = fetch_url_with_retries(url, retries=3, timeout=10)
+    product = parse_page(html)
+    print(product[0])  # View the first product card
+
 
 # # ============== BEGIN =================================
 # # !!!
