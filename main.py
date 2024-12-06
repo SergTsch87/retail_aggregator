@@ -276,10 +276,19 @@ def fetch_all_stores(store_urls):
 #     # save_to_csv(dict_values, fname)
 #     # print('Файл збережено')
 
-
+# ===================
+# Чи це не зайвий код?..
 def load_urls_from_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         return json.load(file)
+# ===================
+
+def save_to_file(data, fname='data.jsonl'):
+    # Save data to a file after each page to avoid overloading RAM.
+    # Use JSON Lines for incremental saving
+    with open(fname, 'a') as f:
+        for record in data:
+            f.write(json.dumps(record) + '\n')
 
 
 def main():
@@ -458,10 +467,14 @@ def main():
 
     # Prototype First Point
     # Start with a single product card
-    url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234?page=1'
-    html = fetch_url_with_retries(url, retries=3, timeout=10)
-    product = parse_page(html)
-    print(product[0])  # View the first product card
+    # url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234?page=1'
+    # html = fetch_url_with_retries(url, retries=3, timeout=10)
+    # product = parse_page(html)
+    # print(product[0])  # View the first product card
+
+    base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
+    all_pages_data = fetch_all_pages(base_url, start_page=1)
+    print(all_pages_data)
 
 
 # # ============== BEGIN =================================
