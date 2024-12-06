@@ -36,6 +36,13 @@ def get_file_path(fname):
     return file_path
 
 
+def timer_elapsed(func):
+    def inner():
+        start_time = time()
+        func()
+        end_time = time()
+        return end_time - start_time
+
 
 def handle_exception(e, context=""):
     """
@@ -181,6 +188,7 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
 #         return handle_exception(e, context=f"Parsing URL {url_page_category}")
 # # ======================================
 
+@timer_elapsed
 def parse_product_card(html_card):
     # Extract Data from a Single Product Card
     soup = BeautifulSoup(html_card, 'html.parser')
@@ -200,6 +208,7 @@ def parse_product_card(html_card):
     }
 
 
+@timer_elapsed
 def parse_page(html_page):
     # Extract All Product Cards on a Page
     # Parse all cards in a container.
@@ -208,6 +217,7 @@ def parse_page(html_page):
     return [parse_product_card(str(card)) for card in product_cards]
 
 
+@timer_elapsed
 def fetch_all_pages(base_url, start_page=1):
     # Iterate Through Pages
     # Add logic to parse multiple pages using pagination
@@ -228,6 +238,7 @@ def fetch_all_pages(base_url, start_page=1):
     return all_pages_data
 
 
+@timer_elapsed
 def fetch_all_stores(store_urls):
     # Process Multiple Stores
     # Extend to iterate over multiple base URLs
@@ -299,7 +310,8 @@ def main():
     logging.basicConfig(
         filename=file_path,
         level=logging.ERROR,
-        format='%(asctime)s - %(levelname)s - %(message)s'
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        filemode = 'a'   # Дозаписування нових записів до файлу
     )
     
     
@@ -472,6 +484,9 @@ def main():
     # product = parse_page(html)
     # print(product[0])  # View the first product card
 
+
+    # Expanding Gradually
+    # Pass the URL of the next store as an argument to fetch_all_pages
     base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
     all_pages_data = fetch_all_pages(base_url, start_page=1)
     print(all_pages_data)
