@@ -37,11 +37,15 @@ def get_file_path(fname):
 
 
 def timer_elapsed(func):
-    def inner():
-        start_time = time()
-        func()
-        end_time = time()
-        return end_time - start_time
+    def inner(*args, **kwargs):
+        start_time = time.time()
+        # func(*args, **kwargs)  # так відбувався зайвий виклик ф-ції func
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f'Time elapsed in {func.__name__}: {end_time - start_time:.2f} seconds')
+        return result
+        # return func(*args, **kwargs)
+    return inner
 
 
 def handle_exception(e, context=""):
@@ -188,7 +192,7 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
 #         return handle_exception(e, context=f"Parsing URL {url_page_category}")
 # # ======================================
 
-@timer_elapsed
+# @timer_elapsed
 def parse_product_card(html_card):
     # Extract Data from a Single Product Card
     soup = BeautifulSoup(html_card, 'html.parser')
