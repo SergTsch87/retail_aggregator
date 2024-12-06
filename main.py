@@ -252,7 +252,7 @@ def fetch_all_stores(store_urls):
     # Extend to iterate over multiple base URLs
     all_stores = {}
     for store_id, base_url in store_urls.items():
-        all_stores[store_id] = fetch_all_pages(base_url)
+        all_stores[store_id] = fetch_all_pages(base_url, start_page=1)
     return all_stores
 
 
