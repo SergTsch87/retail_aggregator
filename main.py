@@ -3,7 +3,7 @@
 # env1\bin\python -m pip freeze > requirements.txt
 # env2\bin\python -m pip install -r requirements.txt
 
-import requests, time, csv, logging, socket, json
+import requests, time, csv, logging, socket, json, sys
 from bs4 import BeautifulSoup
 
 from pathlib import Path
@@ -223,11 +223,19 @@ def fetch_all_pages(base_url, start_page=1):
     # Add logic to parse multiple pages using pagination
     page_number = start_page
     all_pages_data = {}
+    dict_entries ={
+        'count_entries': 0,
+        'sizeof': 0
+    }
     
     while True:
         url = f"{base_url}?page={page_number}"
         html = fetch_url_with_retries(url, retries=3, timeout=10)
         products = parse_page(html)
+        dict_entries['count_pages'] = dict_entries.get('count_pages', 0) + 1
+        dict_entries['count_entries'] = dict_entries.get('count_entries', 0) + len(products)
+        dict_entries['sizeof'] = dict_entries.get('sizeof', 0) + sys.getsizeof(products)
+        print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")
     
         if not products:  # Stop when no more products
             break
