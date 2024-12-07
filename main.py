@@ -93,6 +93,7 @@ def save_to_csv(results, fname = 'parsing_res.csv'):
             writer.writerow(result)
 
 
+@lru_cache(maxsize = 128)
 def fetch_url_with_retries(url, retries=3, timeout=10):
     """
     Fetches a URL with a specified number of retries on network-related errors.  #  Fetches the HTML content of a webpage with error handling for network issues.
@@ -302,13 +303,20 @@ def fetch_all_pages(base_url, start_page=1):
         dict_entries['count_pages'] = dict_entries.get('count_pages', 0) + 1
         dict_entries['count_entries'] = dict_entries.get('count_entries', 0) + len(products)
         dict_entries['sizeof'] = dict_entries.get('sizeof', 0) + sys.getsizeof(products)
+
         print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")
+    
+        # Зроби так, щоб вивід відбувався через кожні 10 сторінок
+        # if dict_entries['count_pages'] // 10 == 0:
+        #     print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")
     
         if not products:  # Stop when no more products
             break
     
         all_pages_data[f'page_{page_number}'] = products
         page_number += 1
+
+    # print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")    
     
     return all_pages_data
 
@@ -559,7 +567,10 @@ def main():
     # Pass the URL of the next store as an argument to fetch_all_pages
     base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
     all_pages_data = fetch_all_pages(base_url, start_page=1)
-    print(all_pages_data)
+    # print(all_pages_data)
+    print('Дані зібрано')
+    save_to_file(all_pages_data, fname='data.jsonl')
+    print(f'Дані збережено до файлу {fname}')
 
 
 # # ============== BEGIN =================================
