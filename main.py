@@ -194,6 +194,7 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
 # # ======================================
 
 def get_item_any_way(soup, tag, class_name):
+    # Повертає елемент / "" (за його відсутності) за його тегом та класом
     item = soup.find(tag, class_=class_name) #.get_text(strip=True)
     
     if not item:
