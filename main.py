@@ -5,6 +5,7 @@
 
 import requests, time, csv, logging, socket, json, sys
 from bs4 import BeautifulSoup
+from functools import lru_cache
 
 from pathlib import Path
 
@@ -192,23 +193,83 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
 #         return handle_exception(e, context=f"Parsing URL {url_page_category}")
 # # ======================================
 
+def get_item_any_way(soup, tag, class_name):
+    item = soup.find(tag, class_=class_name) #.get_text(strip=True)
+    
+    if not item:
+        item = ''
+    else:
+        item = item.get_text(strip=True)
+    return item
+
+
 # @timer_elapsed
 def parse_product_card(html_card):
     # Extract Data from a Single Product Card
+    # Саме в цій функції ми визначаємо усі ті дані, які хочемо дістати з кожної товарної картки
     soup = BeautifulSoup(html_card, 'html.parser')
-    old_price = soup.find("div", class_="ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo") #.get_text(strip=True)
     
-    if not old_price:
-        old_price = ''
-    else:
-        old_price = old_price.get_text(strip=True)
+    # old_price = soup.find("div", class_="ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo") #.get_text(strip=True)
+    
+    # if not old_price:
+    #     old_price = ''
+    # else:
+    #     old_price = old_price.get_text(strip=True)
 
+    tag = "div"
+    class_name = "ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo"
+    old_price = get_item_any_way(soup, tag, class_name)
+
+    # current_price = soup.find("div", class_="ft-whitespace-nowrap ft-text-22 ft-font-bold")  # .get_text(strip=True)
+
+    # if not current_price:
+    #     current_price = ''
+    # else:
+    #     current_price = current_price.get_text(strip=True)
+
+    tag = "div"
+    class_name = "ft-whitespace-nowrap ft-text-22 ft-font-bold"
+    current_price = get_item_any_way(soup, tag, class_name)
+
+    # tag = "div"
+    class_name = "product-card__title"
+    title = get_item_any_way(soup, tag, class_name)
+
+    # "url_card": soup.find("a").get("href")
+    url_card = soup.find("a")  # .get("href")
+
+    if not url_card:
+        url_card = ''
+    else:
+        url_card = url_card.get("href")
+
+    class_name = "ft-typo-14-semibold xl:ft-typo-16-semibold"
+    volume = get_item_any_way(soup, tag, class_name)
+
+    class_name = "product-card-price__sale"
+    discount = get_item_any_way(soup, tag, class_name)
+
+    tag = "span"
+    class_name = "catalog-card-rating--value"
+    rating = get_item_any_way(soup, tag, class_name)
+    
     return {  # for Silpo
         "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
-        "current_price": soup.find("div", class_="ft-whitespace-nowrap ft-text-22 ft-font-bold").get_text(strip=True),
+        "current_price": current_price,
         "old_price": old_price,
-        "url_card": soup.find("a").get("href"),
-        "title": soup.find("div", class_="product-card__title").get_text(strip=True)
+        # "url_card": soup.find("a").get("href"),
+        "url_card": url_card,
+        # "title": soup.find("div", class_="product-card__title").get_text(strip=True)
+        "title": title,
+        "volume": volume,
+        "discount": discount,
+        "rating": rating
+        # На сторінці самого товару:
+            # energy_value
+            # proteins
+            # fats
+            # mass_fraction_of_fat
+            # carbohydrates
     }
 
 
@@ -222,6 +283,7 @@ def parse_page(html_page):
 
 
 @timer_elapsed
+@lru_cache(maxsize = None)
 def fetch_all_pages(base_url, start_page=1):
     # Iterate Through Pages
     # Add logic to parse multiple pages using pagination
@@ -341,11 +403,6 @@ def main():
 #     link:
 #         body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-products-list > div > div:nth-child(1) > shop-silpo-common-product-card > div > a
 
-# energy_value
-# proteins
-# fats
-# mass_fraction_of_fat
-# carbohydrates
 
 
     # url_page_category: 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
