@@ -37,15 +37,14 @@ def get_file_path(fname):
     return file_path
 
 
-def timer_elapsed(func):
+def timer_elapsed(с):
+    # Для замірювання часу виконання ф-ції func
     def inner(*args, **kwargs):
         start_time = time.time()
-        # func(*args, **kwargs)  # так відбувався зайвий виклик ф-ції func
         result = func(*args, **kwargs)
         end_time = time.time()
         print(f'Time elapsed in {func.__name__}: {end_time - start_time:.2f} seconds')
         return result
-        # return func(*args, **kwargs)
     return inner
 
 
@@ -94,6 +93,7 @@ def save_to_csv(results, fname = 'parsing_res.csv'):
 
 
 @lru_cache(maxsize = 128)
+# Для кешування повторних URL адрес
 def fetch_url_with_retries(url, retries=3, timeout=10):
     """
     Fetches a URL with a specified number of retries on network-related errors.  #  Fetches the HTML content of a webpage with error handling for network issues.
