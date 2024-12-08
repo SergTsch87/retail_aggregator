@@ -33,7 +33,7 @@ def get_file_path(fname):
     return file_path
 
 
-def timer_elapsed(с):
+def timer_elapsed(func):
     # Для замірювання часу виконання ф-ції func
     def inner(*args, **kwargs):
         start_time = time.time()
