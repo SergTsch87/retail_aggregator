@@ -126,7 +126,10 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
             response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
             return response.text  # Успішний запит, - Повертаємо контент
         
-        except Exception as e:
+        # !!!
+        # Яка різниця між цими двома рядками?..
+        # except Exception as e:
+        except requests.RequestException as e:
             logging.error(f"Attempt {attempt + 1} failed for {url}.")
             if attempt == retries - 1:  # Last attempt
                 return handle_exception(e, context=f"Fetching URL {url}")
