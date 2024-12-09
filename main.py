@@ -154,43 +154,55 @@ def parse_product_card(html_card):
     # Саме в цій функції ми визначаємо усі ті дані, які хочемо дістати з кожної товарної картки
     soup = BeautifulSoup(html_card, 'html.parser')
     
-    tag = "div"
-    class_name = "ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo"
-    old_price = get_item_any_way(soup, tag, class_name)
+    # tag = "div"
+    # class_name = "ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo"
+    # old_price = get_item_any_way(soup, tag, class_name)
 
-    tag = "div"
-    class_name = "ft-whitespace-nowrap ft-text-22 ft-font-bold"
-    current_price = get_item_any_way(soup, tag, class_name)
+    # tag = "div"
+    # class_name = "ft-whitespace-nowrap ft-text-22 ft-font-bold"
+    # current_price = get_item_any_way(soup, tag, class_name)
 
-    class_name = "product-card__title"
-    title = get_item_any_way(soup, tag, class_name)
+    # class_name = "product-card__title"
+    # title = get_item_any_way(soup, tag, class_name)
 
-    url_card = soup.find("a")  # .get("href")
+    # url_card = soup.find("a")  # .get("href")
 
-    if not url_card:
-        url_card = ''
-    else:
-        url_card = url_card.get("href")
+    # if not url_card:
+    #     url_card = ''
+    # else:
+    #     url_card = url_card.get("href")
 
-    class_name = "ft-typo-14-semibold xl:ft-typo-16-semibold"
-    volume = get_item_any_way(soup, tag, class_name)
+    # class_name = "ft-typo-14-semibold xl:ft-typo-16-semibold"
+    # volume = get_item_any_way(soup, tag, class_name)
 
-    class_name = "product-card-price__sale"
-    discount = get_item_any_way(soup, tag, class_name)
+    # class_name = "product-card-price__sale"
+    # discount = get_item_any_way(soup, tag, class_name)
 
-    tag = "span"
-    class_name = "catalog-card-rating--value"
-    rating = get_item_any_way(soup, tag, class_name)
+    # tag = "span"
+    # class_name = "catalog-card-rating--value"
+    # rating = get_item_any_way(soup, tag, class_name)
     
     return {  # for Silpo
         "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
-        "current_price": current_price,
-        "old_price": old_price,
-        "url_card": url_card,
-        "title": title,
-        "volume": volume,
-        "discount": discount,
-        "rating": rating
+        "current_price": extract_element(soup,
+                                         "div",
+                                         "ft-whitespace-nowrap ft-text-22 ft-font-bold"),
+        "old_price": extract_element(soup,
+                                         "div",
+                                         "ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo"),
+        "url_card": soup.find("a").get("href"),
+        "title": extract_element(soup,
+                                         "div",
+                                         "ft-whitespace-nowrap ft-text-22 ft-font-bold"),
+        "volume": extract_element(soup,
+                                         "div",
+                                         "ft-whitespace-nowrap ft-text-22 ft-font-bold"),
+        "discount": extract_element(soup,
+                                         "div",
+                                         "ft-whitespace-nowrap ft-text-22 ft-font-bold"),
+        "rating": extract_element(soup,
+                                         "div",
+                                         "ft-whitespace-nowrap ft-text-22 ft-font-bold")
         # На сторінці самого товару:
             # energy_value
             # proteins
