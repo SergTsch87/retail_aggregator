@@ -43,20 +43,31 @@ def handle_exception(e, context=""):
     Returns:
         str: Formatted error message
     """
-    if isinstance(e, requests.exceptions.Timeout):
-        error_message = "Error: Request timed out."
-    elif isinstance(e, requests.exceptions.ConnectionError):
-        error_message = "Error: Could not connect to the server."
-    elif isinstance(e, requests.exceptions.HTTPError):
-        error_message = f"Error: HTTP error occurred. Status code: {e.response.status_code if e.response else 'Unknown'}."
-    elif isinstance(e, AttributeError):
-        error_message = f"Error: HTML structure issue - {e}."
-    elif isinstance(e, ValueError):
-        error_message = f"Error: Data issue - {e}."
-    elif isinstance(e, requests.exceptions.RequestException):
-        error_message = f"Error: Unexpected request error - {e}."
-    else:
-        error_message = f"Error: An unexpected error occurred - {e}."
+    error_messages = {
+        requests.exceptions.Timeout: "Request timed out.",
+        requests.exceptions.ConnectionError: "Could not connect to the server.",
+        requests.exceptions.HTTPError: "HTTP error occurred.",
+        AttributeError: "HTML structure issue.",
+        ValueError: "Data issue.",
+        requests.exceptions.RequestException: "Unexpected request error."
+    }
+
+    # if isinstance(e, requests.exceptions.Timeout):
+    #     error_message = "Error: Request timed out."
+    # elif isinstance(e, requests.exceptions.ConnectionError):
+    #     error_message = "Error: Could not connect to the server."
+    # elif isinstance(e, requests.exceptions.HTTPError):
+    #     error_message = f"Error: HTTP error occurred. Status code: {e.response.status_code if e.response else 'Unknown'}."
+    # elif isinstance(e, AttributeError):
+    #     error_message = f"Error: HTML structure issue - {e}."
+    # elif isinstance(e, ValueError):
+    #     error_message = f"Error: Data issue - {e}."
+    # elif isinstance(e, requests.exceptions.RequestException):
+    #     error_message = f"Error: Unexpected request error - {e}."
+    # else:
+    #     error_message = f"Error: An unexpected error occurred - {e}."
+
+    error_message = error_messages.get(type(e), f"Unexpected error: {e}")
 
     logging.error(f"{context} {error_message}")
     return error_message
@@ -90,9 +101,7 @@ def save_to_csv(results, fname = 'parsing_res.csv'):
 
 
 # ------------- Parsing logic ---------------------------------
-
-
-@lru_cache(maxsize = 128)  # Для кешування повторних URL адрес
+@lru_cache(maxsize = 3000)  # Для кешування повторних URL адрес
 def fetch_url_with_retries(url, retries=3, timeout=10):
     """
     Fetches a URL with a specified number of retries on network-related errors.  #  Fetches the HTML content of a webpage with error handling for network issues.
@@ -112,12 +121,7 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
     # Повтори при таймаутах
     for attempt in range(retries):
         try:
-            # Set a timeout to prevent handling
-            
-            # !!! Встав свій User-Agent !
-            # headers={"User-Agent": "your-user-agent"}
-            # response = requests.get(url, timeout=timeout, headers=headers)
-            
+            # !!! Встав свій User-Agent !       # headers={"User-Agent": "your-user-agent"}     # response = requests.get(url, timeout=timeout, headers=headers)
             response = requests.get(url, timeout=timeout)
             response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
             return response.text  # Успішний запит, - Повертаємо контент
