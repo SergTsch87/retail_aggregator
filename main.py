@@ -17,6 +17,7 @@ from pathlib import Path
 # Завдання 3: Об'єднай два різні коди парсингу для динамічних та статичних сайтів з допомогою декоратора
 
 
+# ---------- Utility functions --------------------
 def is_connected():
     # Для перевірки доступності інтернету перед відправленням запиту
     try:
@@ -28,20 +29,7 @@ def is_connected():
 
 def get_file_path(fname):
     # Визначаємо повний шлях до файлу fname
-    current_dir = Path(__file__).parent  # Папка, в якій знаходиться наш скрипт
-    file_path = current_dir / fname  # Задаємо ім'я та шлях до файлу
-    return file_path
-
-
-def timer_elapsed(func):
-    # Для замірювання часу виконання ф-ції func
-    def inner(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        print(f'Time elapsed in {func.__name__}: {end_time - start_time:.2f} seconds')
-        return result
-    return inner
+    return Path(__file__).parent / fname
 
 
 def handle_exception(e, context=""):
@@ -74,6 +62,17 @@ def handle_exception(e, context=""):
     return error_message
 
 
+def timer_elapsed(func):
+    # Для замірювання часу виконання ф-ції func
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f'Time elapsed in {func.__name__}: {end_time - start_time:.2f} seconds')
+        return result
+    return wrapper
+
+
 def save_to_csv(results, fname = 'parsing_res.csv'):
     """
         Зберігає рез-ти перевірки до CSV для подальшого ан-зу
@@ -81,11 +80,16 @@ def save_to_csv(results, fname = 'parsing_res.csv'):
     # Повний шлях до файлу fname
     file_path = get_file_path(fname)
 
-    with open(file_path, mode='w', newline='', encoding='utf-8') as file:
+    # with open(file_path, mode='w', newline='', encoding='utf-8') as file:
+    with file_path.open(mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow(['Name', 'URL', 'Result'])
-        for result in results:
-            writer.writerow(result)
+        # for result in results:
+        #     writer.writerow(result)
+        writer.writerows(results)
+
+
+# ------------- Parsing logic ---------------------------------
 
 
 @lru_cache(maxsize = 128)  # Для кешування повторних URL адрес
