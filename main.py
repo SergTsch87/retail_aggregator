@@ -139,15 +139,13 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
     return 'Error: Failed to fetch the URL after multiple retries.'
 
 
-def get_item_any_way(soup, tag, class_name):
-    # Повертає елемент / "" (за його відсутності) за його тегом та класом
-    item = soup.find(tag, class_=class_name) #.get_text(strip=True)
-    
-    if not item:
-        item = ''
-    else:
-        item = item.get_text(strip=True)
-    return item
+# def get_item_any_way(soup, tag, class_name):
+def extract_element(soup, tag, class_name):
+    """
+    Повертає текст елемента або порожній рядок, якщо елемент не знайдено
+    """
+    element = soup.find(tag, class_=class_name)
+    return element.get_text(strip=True) if element else ''
 
 
 # @timer_elapsed
