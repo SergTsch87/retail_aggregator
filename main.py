@@ -250,9 +250,13 @@ def fetch_all_stores(store_urls):
 def save_to_file(data, fname='data.jsonl'):
     # Save data to a file after each page to avoid overloading RAM.
     # Use JSON Lines for incremental saving
-    with open(fname, 'a') as f:
+    file_path = get_file_path(fname)
+    with file_path.open(mode='a', encoding='utf-8') as file:
         for record in data:
-            f.write(json.dumps(record) + '\n')
+            file.write(json.dumps(record) + '\n')
+    # with open(fname, 'a') as f:
+    #     for record in data:
+    #         f.write(json.dumps(record) + '\n')
 
 
 def main():
