@@ -237,16 +237,6 @@ def fetch_all_pages(base_url, start_page=1):
     return all_products
 
 
-@timer_elapsed
-def fetch_all_stores(store_urls):
-    # Process Multiple Stores
-    # Extend to iterate over multiple base URLs
-    all_stores = {}
-    for store_id, base_url in store_urls.items():
-        all_stores[store_id] = fetch_all_pages(base_url, start_page=1)
-    return all_stores
-
-
 def save_to_file(data, fname='data.jsonl'):
     # Save data to a file after each page to avoid overloading RAM.
     # Use JSON Lines for incremental saving
@@ -259,13 +249,26 @@ def save_to_file(data, fname='data.jsonl'):
     #         f.write(json.dumps(record) + '\n')
 
 
+@timer_elapsed
+def fetch_all_stores(store_urls):
+    # Process Multiple Stores
+    # Extend to iterate over multiple base URLs
+    all_stores = {}
+    for store_id, base_url in store_urls.items():
+        all_stores[store_id] = fetch_all_pages(base_url, start_page=1)
+    return all_stores
+
+
+@timer_elapsed
 def main():
     # Повний шлях до файлу fname
-    fname = 'parser_errors.log'
-    file_path = get_file_path(fname)
+    
+    # ! Зайве
+    # fname = 'parser_errors.log'
+    # file_path = get_file_path(fname)
     
     logging.basicConfig(
-        filename=file_path,
+        filename=get_file_path('parser_errors.log'),
         level=logging.ERROR,
         format='%(asctime)s - %(levelname)s - %(message)s',
         filemode = 'a'   # Дозаписування нових записів до файлу
@@ -282,7 +285,7 @@ def main():
     # Expanding Gradually
     # Pass the URL of the next store as an argument to fetch_all_pages
     base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-    all_pages_data = fetch_all_pages(base_url, start_page=1)
+    all_products = fetch_all_pages(base_url, start_page=1)
     print('Дані зібрано')
-    save_to_file(all_pages_data, fname='data.jsonl')
-    print(f'Дані збережено до файлу {fname}')
+    save_to_file(all_products, 'data.jsonl')
+    print('Дані збережено до файлу "data.jsonl"')
