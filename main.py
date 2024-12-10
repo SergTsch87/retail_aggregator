@@ -201,6 +201,7 @@ def fetch_all_pages(base_url, start_page=1):
     # Iterate Through Pages
     # Add logic to parse multiple pages using pagination
     # Отримує дані з усіх сторінок категорії
+    print('Begin code in fetch_all_pages')
     page_number = start_page
     all_products = []
     
@@ -209,11 +210,15 @@ def fetch_all_pages(base_url, start_page=1):
     #     'count_entries': 0,
     #     'sizeof': 0
     # }
-    
+    print('Code in fetch_all_pages, Before While Loop')
     while True:
         url = f"{base_url}?page={page_number}"
+        print('Code in fetch_all_pages, In While Loop, Before call fetch_url_with_retries')
         html = fetch_url_with_retries(url, retries=3, timeout=10)
+        print('Code in fetch_all_pages, In While Loop, After call fetch_url_with_retries')
+        print('Code in fetch_all_pages, In While Loop, Before call parse_page')
         products = parse_page(html)
+        print('Code in fetch_all_pages, In While Loop, After call parse_page')
         # dict_entries['count_pages'] = dict_entries.get('count_pages', 0) + 1
         # dict_entries['count_entries'] = dict_entries.get('count_entries', 0) + len(products)
         # dict_entries['sizeof'] = dict_entries.get('sizeof', 0) + sys.getsizeof(products)
@@ -230,20 +235,25 @@ def fetch_all_pages(base_url, start_page=1):
         # all_pages_data[f'page_{page_number}'] = products
         all_products.extend(products)
         page_number += 1
+    print('Code in fetch_all_pages, After While Loop')
 
     # print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")    
     
+    print('The end code in fetch_all_pages (Before Return)')
     # return all_pages_data
     return all_products
 
 
+@timer_elapsed
 def save_to_file(data, fname='data.jsonl'):
     # Save data to a file after each page to avoid overloading RAM.
     # Use JSON Lines for incremental saving
+    print('Begin code in save_to_file')
     file_path = get_file_path(fname)
     with file_path.open(mode='a', encoding='utf-8') as file:
         for record in data:
             file.write(json.dumps(record) + '\n')
+    print('The End code in save_to_file')
     # with open(fname, 'a') as f:
     #     for record in data:
     #         f.write(json.dumps(record) + '\n')
@@ -289,3 +299,7 @@ def main():
     print('Дані зібрано')
     save_to_file(all_products, 'data.jsonl')
     print('Дані збережено до файлу "data.jsonl"')
+
+
+if __name__ == "__main__":
+    main()
