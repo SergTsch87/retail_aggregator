@@ -121,10 +121,19 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
     # Повтори при таймаутах
     for attempt in range(retries):
         try:
+            # new code
+            print(f'Fetching URL: {url}')  # !!! переконайтеся, що ви дійсно отримуєте нову сторінку
+            
             # !!! Встав свій User-Agent !       # headers={"User-Agent": "your-user-agent"}     # response = requests.get(url, timeout=timeout, headers=headers)
             response = requests.get(url, timeout=timeout)
             response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
-            return response.text  # Успішний запит, - Повертаємо контент
+            html = response.text
+            
+            # new code
+            if html is None or len(html.strip()) == 0:
+                return []
+            
+            return html  # Успішний запит, - Повертаємо контент
         
         # !!!
         # Яка різниця між цими двома рядками?..
@@ -186,13 +195,26 @@ def parse_product_card(html_card):
             # carbohydrates
 
 
+# body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-catalog-no-products-found > div > div > span
+# Товари закінчилися
 # @timer_elapsed
 def parse_page(html_page):
     # Extract All Product Cards on a Page
     # Parse all cards in a container.
+    
+    # new code
+    products = []
+    
     soup = BeautifulSoup(html_page, 'html.parser')
     product_cards = soup.find_all('div', class_="products-list__item")  # for Silpo
-    return [parse_product_card(str(card)) for card in product_cards]
+    products = [parse_product_card(str(card)) for card in product_cards]
+    
+    # new code
+    if not products or "Товари закінчилися" in html_page:   # Перевірка на порожній список або помилковий номер сторінки
+        return []
+    
+    return products
+    # return [parse_product_card(str(card)) for card in product_cards]
 
 
 @timer_elapsed
@@ -201,45 +223,86 @@ def fetch_all_pages(base_url, start_page=1):
     # Iterate Through Pages
     # Add logic to parse multiple pages using pagination
     # Отримує дані з усіх сторінок категорії
-    print('Begin code in fetch_all_pages')
+    # print('Begin code in fetch_all_pages')
     page_number = start_page
     all_products = []
+
+    # new code
+    previous_url = None
     
     # all_pages_data = {}
-    # dict_entries ={
-    #     'count_entries': 0,
-    #     'sizeof': 0
-    # }
-    print('Code in fetch_all_pages, Before While Loop')
+    dict_entries ={
+        'count_entries': 0,
+        'sizeof': 0
+    }
+    # print('Code in fetch_all_pages, Before While Loop')
+
+    # new code
+    previous_products = None
+
     while True:
         url = f"{base_url}?page={page_number}"
-        print('Code in fetch_all_pages, In While Loop, Before call fetch_url_with_retries')
+        print(f'url = {url}')
+        # print('Code in fetch_all_pages, In While Loop, Before call fetch_url_with_retries')
+
+        
+        # new code
+        response = requests.get(url, timeout=10)
+        final_url = response.url   # URL після редиректу
+
+        # Перевірка на редирект
+        if final_url != url:
+            print(f"Redirect detected! Final URL: {final_url}")
+            if final_url == previous_url:  # Якщо повернулись до тієї ж сторінки
+                print("Rederected to the same page. Stopping.")
+                break
+
+
         html = fetch_url_with_retries(url, retries=3, timeout=10)
-        print('Code in fetch_all_pages, In While Loop, After call fetch_url_with_retries')
-        print('Code in fetch_all_pages, In While Loop, Before call parse_page')
+
+        # new code 
+        if not html:
+            print("Empty HTML or failed to fetch page.")
+            break
+
+        # print('Code in fetch_all_pages, In While Loop, After call fetch_url_with_retries')
+        # print('Code in fetch_all_pages, In While Loop, Before call parse_page')
         products = parse_page(html)
-        print('Code in fetch_all_pages, In While Loop, After call parse_page')
-        # dict_entries['count_pages'] = dict_entries.get('count_pages', 0) + 1
-        # dict_entries['count_entries'] = dict_entries.get('count_entries', 0) + len(products)
+        
+        # new code 
+        if not products or products == previous_products:  # Зупинити, якщо список порожній / повтор-ся
+            print("No more produts or duplicate page detected.")
+            break
+        previous_products = products  # Нащо?..
+        
+        save_to_file(products, 'data.jsonl')
+        # print('Code in fetch_all_pages, In While Loop, After call parse_page')
+        dict_entries['count_pages'] = dict_entries.get('count_pages', 0) + 1
+        dict_entries['count_entries'] = dict_entries.get('count_entries', 0) + len(products)
         # dict_entries['sizeof'] = dict_entries.get('sizeof', 0) + sys.getsizeof(products)
 
         # print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")
+        print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\n")
     
         # Зроби так, щоб вивід відбувався через кожні 10 сторінок
         # if dict_entries['count_pages'] // 10 == 0:
         #     print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")
     
-        if not products:  # Stop when no more products
-            break
+        # new code: old code commenting
+        # if not products:  # Stop when no more products
+        #     break
     
         # all_pages_data[f'page_{page_number}'] = products
         all_products.extend(products)
         page_number += 1
-    print('Code in fetch_all_pages, After While Loop')
+
+        # new code 
+        previous_url = final_url  # Зберігаємо URL для порівняння у наступному циклі
+    # print('Code in fetch_all_pages, After While Loop')
 
     # print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")    
     
-    print('The end code in fetch_all_pages (Before Return)')
+    # print('The end code in fetch_all_pages (Before Return)')
     # return all_pages_data
     return all_products
 
@@ -248,12 +311,12 @@ def fetch_all_pages(base_url, start_page=1):
 def save_to_file(data, fname='data.jsonl'):
     # Save data to a file after each page to avoid overloading RAM.
     # Use JSON Lines for incremental saving
-    print('Begin code in save_to_file')
+    # print('Begin code in save_to_file')
     file_path = get_file_path(fname)
     with file_path.open(mode='a', encoding='utf-8') as file:
         for record in data:
             file.write(json.dumps(record) + '\n')
-    print('The End code in save_to_file')
+    # print('The End code in save_to_file')
     # with open(fname, 'a') as f:
     #     for record in data:
     #         f.write(json.dumps(record) + '\n')
@@ -296,9 +359,9 @@ def main():
     # Pass the URL of the next store as an argument to fetch_all_pages
     base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
     all_products = fetch_all_pages(base_url, start_page=1)
-    print('Дані зібрано')
-    save_to_file(all_products, 'data.jsonl')
-    print('Дані збережено до файлу "data.jsonl"')
+    # print('Дані зібрано')
+    # # save_to_file(all_products, 'data.jsonl')
+    # print('Дані збережено до файлу "data.jsonl"')
 
 
 if __name__ == "__main__":
