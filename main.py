@@ -277,6 +277,7 @@ def fetch_all_pages(base_url, start_page=1):
         # new code 
         # Парсинг сторінки
         soup = BeautifulSoup(response.text, 'html.parser')
+        print(f'soup == {soup}')
         products = parse_page(soup)
         
         # new code 
