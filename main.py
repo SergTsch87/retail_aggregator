@@ -242,13 +242,18 @@ def fetch_all_pages(base_url, start_page=1):
 
     while True:
         url = f"{base_url}?page={page_number}"
-        print(f'url = {url}')
+        print(f'Fetching URL: {url}')
         # print('Code in fetch_all_pages, In While Loop, Before call fetch_url_with_retries')
 
         
         # new code
         response = requests.get(url, timeout=10)
         final_url = response.url   # URL після редиректу
+
+        # new code 
+        # Містить список редиректів. Якщо список не порожній, це означає, що був редирект.
+        if response.history:
+            print(f"[Redirect history: {[resp.status_code for resp in response.history]}")
 
         # Перевірка на редирект
         if final_url != url:
@@ -267,7 +272,12 @@ def fetch_all_pages(base_url, start_page=1):
 
         # print('Code in fetch_all_pages, In While Loop, After call fetch_url_with_retries')
         # print('Code in fetch_all_pages, In While Loop, Before call parse_page')
-        products = parse_page(html)
+        # products = parse_page(html)
+
+        # new code 
+        # Парсинг сторінки
+        soup = BeautifulSoup(response.text, 'html.parser')
+        products = parse_page(soup)
         
         # new code 
         if not products or products == previous_products:  # Зупинити, якщо список порожній / повтор-ся
