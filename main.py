@@ -217,6 +217,15 @@ def parse_page(html_page):
     # return [parse_product_card(str(card)) for card in product_cards]
 
 
+def get_max_pagination(base_url):
+    # """
+    # Повертає найбільшу к-сть сторінок певної категорії
+    # """
+    response = requests.get(base_url, timeout=10)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    return soup.find('div', class_='pagination__gutter').find_next_sibling('a').get_text(strip=True)
+    
+
 @timer_elapsed
 @lru_cache(maxsize = None)
 def fetch_all_pages(base_url, start_page=1):
@@ -237,10 +246,13 @@ def fetch_all_pages(base_url, start_page=1):
     }
     # print('Code in fetch_all_pages, Before While Loop')
 
-    # new code
-    previous_products = None
+    # # new code
+    # previous_products = None
 
-    while True:
+    max_num_pages = get_max_pagination(base_url) #  Найбільше число у пагінації
+    
+    # while True:
+    while page_number <= max_num_pages:
         url = f"{base_url}?page={page_number}"
         print(f'Fetching URL: {url}')
         # print('Code in fetch_all_pages, In While Loop, Before call fetch_url_with_retries')
@@ -272,19 +284,19 @@ def fetch_all_pages(base_url, start_page=1):
 
         # print('Code in fetch_all_pages, In While Loop, After call fetch_url_with_retries')
         # print('Code in fetch_all_pages, In While Loop, Before call parse_page')
-        # products = parse_page(html)
+        products = parse_page(html)
 
-        # new code 
-        # Парсинг сторінки
-        soup = BeautifulSoup(response.text, 'html.parser')
-        print(f'soup == {soup}')
-        products = parse_page(soup)
+        # # new code 
+        # # Парсинг сторінки
+        # soup = BeautifulSoup(response.text, 'html.parser')
+        # print(f'\n\nsoup == \n{soup}\n\n')
+        # products = parse_page(soup)
         
-        # new code 
-        if not products or products == previous_products:  # Зупинити, якщо список порожній / повтор-ся
-            print("No more produts or duplicate page detected.")
-            break
-        previous_products = products  # Нащо?..
+        # # new code 
+        # if not products or products == previous_products:  # Зупинити, якщо список порожній / повтор-ся
+        #     print("No more produts or duplicate page detected.")
+        #     break
+        # previous_products = products  # Нащо?..
         
         save_to_file(products, 'data.jsonl')
         # print('Code in fetch_all_pages, In While Loop, After call parse_page')
@@ -368,8 +380,13 @@ def main():
 
     # Expanding Gradually
     # Pass the URL of the next store as an argument to fetch_all_pages
+    
     base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
     all_products = fetch_all_pages(base_url, start_page=1)
+
+    # print(f'num = {get_max_pagination(base_url)}')
+    # #  Найбільше число у пагінації
+
     # print('Дані зібрано')
     # # save_to_file(all_products, 'data.jsonl')
     # print('Дані збережено до файлу "data.jsonl"')
