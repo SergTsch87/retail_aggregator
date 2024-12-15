@@ -217,13 +217,14 @@ def parse_page(html_page):
     # return [parse_product_card(str(card)) for card in product_cards]
 
 
+# def get_num_last_page_category(base_url):
 def get_max_pagination(base_url):
     # """
     # Повертає найбільшу к-сть сторінок певної категорії
     # """
     response = requests.get(base_url, timeout=10)
     soup = BeautifulSoup(response.text, 'html.parser')
-    return soup.find('div', class_='pagination__gutter').find_next_sibling('a').get_text(strip=True)
+    return int(soup.find('div', class_='pagination__gutter').find_next_sibling('a').get_text(strip=True))
     
 
 @timer_elapsed
