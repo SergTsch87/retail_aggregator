@@ -58,6 +58,19 @@ def timer_elapsed(func):   # Для замірювання часу викона
     return wrapper
 
 # ------------- Parsing logic ---------------------------------
+def get_soup_obj(url, timeout=10):
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+    return BeautifulSoup(response.text, 'html.parser')
+
+
+def get_list_all_categories(url):
+    # class_ = menu-categories ng-star-inserted
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+
 @lru_cache(maxsize = 3000)  # Для кешування повторних URL адрес
 def fetch_url_with_retries(url, retries=3, timeout=10):
     """
@@ -159,6 +172,7 @@ def get_max_pagination(base_url):
     # Повертає найбільшу к-сть сторінок певної категорії
     # """
     response = requests.get(base_url, timeout=10)
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
     soup = BeautifulSoup(response.text, 'html.parser')
     return int(soup.find('div', class_='pagination__gutter').find_next_sibling('a').get_text(strip=True))
     
@@ -189,6 +203,7 @@ def fetch_all_pages(base_url, start_page=1):
         # print('Code in fetch_all_pages, In While Loop, Before call fetch_url_with_retries')
 
         response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
         final_url = response.url   # URL після редиректу
 
         # Містить список редиректів. Якщо список не порожній, це означає, що був редирект.
