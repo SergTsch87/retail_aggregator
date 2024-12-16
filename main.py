@@ -10,16 +10,8 @@ from functools import lru_cache
 from pathlib import Path
 
 
-# +  Завдання 1: Прибери зайві коментарі та код
-
-# Завдання 2: Перевір усі виключні ситуації, які прописав, зімітувавши їх
-
-# Завдання 3: Об'єднай два різні коди парсингу для динамічних та статичних сайтів з допомогою декоратора
-
-
 # ---------- Utility functions --------------------
-def is_connected():
-    # Для перевірки доступності інтернету перед відправленням запиту
+def is_connected():    # Для перевірки доступності інтернету перед відправленням запиту
     try:
         socket.create_connection(('www.google.com', 80), timeout=5)
         return True
@@ -27,8 +19,7 @@ def is_connected():
         return False
 
 
-def get_file_path(fname):
-    # Визначаємо повний шлях до файлу fname
+def get_file_path(fname):       # Визначаємо повний шлях до файлу fname
     return Path(__file__).parent / fname
 
 
@@ -52,29 +43,12 @@ def handle_exception(e, context=""):
         requests.exceptions.RequestException: "Unexpected request error."
     }
 
-    # if isinstance(e, requests.exceptions.Timeout):
-    #     error_message = "Error: Request timed out."
-    # elif isinstance(e, requests.exceptions.ConnectionError):
-    #     error_message = "Error: Could not connect to the server."
-    # elif isinstance(e, requests.exceptions.HTTPError):
-    #     error_message = f"Error: HTTP error occurred. Status code: {e.response.status_code if e.response else 'Unknown'}."
-    # elif isinstance(e, AttributeError):
-    #     error_message = f"Error: HTML structure issue - {e}."
-    # elif isinstance(e, ValueError):
-    #     error_message = f"Error: Data issue - {e}."
-    # elif isinstance(e, requests.exceptions.RequestException):
-    #     error_message = f"Error: Unexpected request error - {e}."
-    # else:
-    #     error_message = f"Error: An unexpected error occurred - {e}."
-
     error_message = error_messages.get(type(e), f"Unexpected error: {e}")
-
     logging.error(f"{context} {error_message}")
     return error_message
 
 
-def timer_elapsed(func):
-    # Для замірювання часу виконання ф-ції func
+def timer_elapsed(func):   # Для замірювання часу виконання ф-ції func
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
@@ -82,23 +56,6 @@ def timer_elapsed(func):
         print(f'Time elapsed in {func.__name__}: {end_time - start_time:.2f} seconds')
         return result
     return wrapper
-
-
-def save_to_csv(results, fname = 'parsing_res.csv'):
-    """
-        Зберігає рез-ти перевірки до CSV для подальшого ан-зу
-    """
-    # Повний шлях до файлу fname
-    file_path = get_file_path(fname)
-
-    # with open(file_path, mode='w', newline='', encoding='utf-8') as file:
-    with file_path.open(mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerow(['Name', 'URL', 'Result'])
-        # for result in results:
-        #     writer.writerow(result)
-        writer.writerows(results)
-
 
 # ------------- Parsing logic ---------------------------------
 @lru_cache(maxsize = 3000)  # Для кешування повторних URL адрес
@@ -121,35 +78,27 @@ def fetch_url_with_retries(url, retries=3, timeout=10):
     # Повтори при таймаутах
     for attempt in range(retries):
         try:
-            # new code
             print(f'Fetching URL: {url}')  # !!! переконайтеся, що ви дійсно отримуєте нову сторінку
             
-            # !!! Встав свій User-Agent !       # headers={"User-Agent": "your-user-agent"}     # response = requests.get(url, timeout=timeout, headers=headers)
             response = requests.get(url, timeout=timeout)
             response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
             html = response.text
             
-            # new code
             if html is None or len(html.strip()) == 0:
                 return []
             
             return html  # Успішний запит, - Повертаємо контент
         
-        # !!!
-        # Яка різниця між цими двома рядками?..
-        # except Exception as e:
         except requests.RequestException as e:
             logging.error(f"Attempt {attempt + 1} failed for {url}.")
             if attempt == retries - 1:  # Last attempt
                 return handle_exception(e, context=f"Fetching URL {url}")
             time.sleep(2 ** attempt)  #  Покрокове збільшення затримки, - задля уникнення блокування сервером
 
-    # Якщо усі спроби були невдалі:
-    return 'Error: Failed to fetch the URL after multiple retries.'
+    return 'Error: Failed to fetch the URL after multiple retries.'  # Якщо усі спроби були невдалі:...
 
 
-# def get_item_any_way(soup, tag, class_name):
-def extract_element(soup, tag, class_name):
+def extract_element(soup, tag, class_name):  # def get_item_any_way(soup, tag, class_name):
     """
     Повертає текст елемента або порожній рядок, якщо елемент не знайдено
     """
@@ -171,7 +120,6 @@ def parse_product_card(html_card):
                                          "div",
                                          "ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo"),
         
-        # "url_card": soup.find("a").get("href") if soup.find("a") else '',
         "url_card": soup.find("a")["href"] if soup.find("a") else '',
         
         "title": extract_element(soup,
@@ -187,37 +135,25 @@ def parse_product_card(html_card):
                                          "span",
                                          "catalog-card-rating--value")
     }
-        # На сторінці самого товару:
-            # energy_value
-            # proteins
-            # fats
-            # mass_fraction_of_fat
-            # carbohydrates
+        
 
-
-# body > sf-shop-silpo-root > shop-silpo-root-shell > silpo-shell-main > div > div.main__body > silpo-category > silpo-catalog > div > div.container.catalog__products > product-card-skeleton > silpo-catalog-no-products-found > div > div > span
-# Товари закінчилися
 # @timer_elapsed
 def parse_page(html_page):
     # Extract All Product Cards on a Page
     # Parse all cards in a container.
     
-    # new code
     products = []
     
     soup = BeautifulSoup(html_page, 'html.parser')
     product_cards = soup.find_all('div', class_="products-list__item")  # for Silpo
     products = [parse_product_card(str(card)) for card in product_cards]
     
-    # new code
     if not products or "Товари закінчилися" in html_page:   # Перевірка на порожній список або помилковий номер сторінки
         return []
     
     return products
-    # return [parse_product_card(str(card)) for card in product_cards]
 
 
-# def get_num_last_page_category(base_url):
 def get_max_pagination(base_url):
     # """
     # Повертає найбільшу к-сть сторінок певної категорії
@@ -233,13 +169,9 @@ def fetch_all_pages(base_url, start_page=1):
     # Iterate Through Pages
     # Add logic to parse multiple pages using pagination
     # Отримує дані з усіх сторінок категорії
-    # print('Begin code in fetch_all_pages')
     page_number = start_page
     all_products = []
-
-    # new code
-    previous_url = None
-    
+    previous_url = None    
     # all_pages_data = {}
     dict_entries ={
         'count_entries': 0,
@@ -247,23 +179,18 @@ def fetch_all_pages(base_url, start_page=1):
     }
     # print('Code in fetch_all_pages, Before While Loop')
 
-    # # new code
     # previous_products = None
 
     max_num_pages = get_max_pagination(base_url) #  Найбільше число у пагінації
     
-    # while True:
     while page_number <= max_num_pages:
         url = f"{base_url}?page={page_number}"
         print(f'Fetching URL: {url}')
         # print('Code in fetch_all_pages, In While Loop, Before call fetch_url_with_retries')
 
-        
-        # new code
         response = requests.get(url, timeout=10)
         final_url = response.url   # URL після редиректу
 
-        # new code 
         # Містить список редиректів. Якщо список не порожній, це означає, що був редирект.
         if response.history:
             print(f"[Redirect history: {[resp.status_code for resp in response.history]}")
@@ -275,10 +202,8 @@ def fetch_all_pages(base_url, start_page=1):
                 print("Rederected to the same page. Stopping.")
                 break
 
-
         html = fetch_url_with_retries(url, retries=3, timeout=10)
 
-        # new code 
         if not html:
             print("Empty HTML or failed to fetch page.")
             break
@@ -286,18 +211,6 @@ def fetch_all_pages(base_url, start_page=1):
         # print('Code in fetch_all_pages, In While Loop, After call fetch_url_with_retries')
         # print('Code in fetch_all_pages, In While Loop, Before call parse_page')
         products = parse_page(html)
-
-        # # new code 
-        # # Парсинг сторінки
-        # soup = BeautifulSoup(response.text, 'html.parser')
-        # print(f'\n\nsoup == \n{soup}\n\n')
-        # products = parse_page(soup)
-        
-        # # new code 
-        # if not products or products == previous_products:  # Зупинити, якщо список порожній / повтор-ся
-        #     print("No more produts or duplicate page detected.")
-        #     break
-        # previous_products = products  # Нащо?..
         
         save_to_file(products, 'data.jsonl')
         # print('Code in fetch_all_pages, In While Loop, After call parse_page')
@@ -307,27 +220,17 @@ def fetch_all_pages(base_url, start_page=1):
 
         # print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")
         print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\n")
-    
-        # Зроби так, щоб вивід відбувався через кожні 10 сторінок
-        # if dict_entries['count_pages'] // 10 == 0:
-        #     print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")
-    
-        # new code: old code commenting
-        # if not products:  # Stop when no more products
-        #     break
-    
+        
         # all_pages_data[f'page_{page_number}'] = products
         all_products.extend(products)
         page_number += 1
 
-        # new code 
         previous_url = final_url  # Зберігаємо URL для порівняння у наступному циклі
     # print('Code in fetch_all_pages, After While Loop')
 
     # print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\nsizeof = {dict_entries['sizeof']}\n")    
     
     # print('The end code in fetch_all_pages (Before Return)')
-    # return all_pages_data
     return all_products
 
 
@@ -341,10 +244,7 @@ def save_to_file(data, fname='data.jsonl'):
         for record in data:
             file.write(json.dumps(record) + '\n')
     # print('The End code in save_to_file')
-    # with open(fname, 'a') as f:
-    #     for record in data:
-    #         f.write(json.dumps(record) + '\n')
-
+    
 
 @timer_elapsed
 def fetch_all_stores(store_urls):
@@ -358,12 +258,6 @@ def fetch_all_stores(store_urls):
 
 @timer_elapsed
 def main():
-    # Повний шлях до файлу fname
-    
-    # ! Зайве
-    # fname = 'parser_errors.log'
-    # file_path = get_file_path(fname)
-    
     logging.basicConfig(
         filename=get_file_path('parser_errors.log'),
         level=logging.ERROR,
