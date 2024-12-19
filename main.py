@@ -3,6 +3,28 @@
 # env1\bin\python -m pip freeze > requirements.txt
 # env2\bin\python -m pip install -r requirements.txt
 
+
+# !!!
+# Поки варто зробити так:
+# 1) Зібрати дані з усіх категорій Сільпо (може, ще й з кожного міста)
+# 2) Зібрати дані з інших маркетів
+# 3) Створити таблицю(ці) з унормованими даними (тобто, цінами за кг/л/шт тощо)
+
+# !!!
+# Власне API сайту silpo:
+#     https://sf-ecom-api.silpo.ua/v1/uk/branches/00000000-0000-0000-0000-000000000000/products?limit=200&deliveryType=DeliveryHome&sortBy=popularity&sortDirection=desc&mustHavePromotion=true&inStock=true
+# !!!
+# Знайшов!)
+# Також почитай поради від ChatGPT
+
+# 1) Потренуватись в роботі з гілками
+# git merge local remoute server
+
+# 1) Зібрати вручну список API-адрес
+# 2) Парсером зібрати усі дані з них
+# 3) Додати до кожного продукту його вартість за 1 кг / л / упаковку тощо відповідно
+
+
 import requests, time, csv, logging, socket, json, sys
 from bs4 import BeautifulSoup
 from functools import lru_cache
@@ -58,19 +80,31 @@ def timer_elapsed(func):   # Для замірювання часу викона
     return wrapper
 
 # ------------- Parsing logic ---------------------------------
-def fetch_content(url, timeout=10, return_soup=True):
-    response = requests.get(url, timeout=10)
+def fetch_content(url, timeout=20, return_soup=True):
+    response = requests.get(url, timeout=20)
     response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
     html = response.text
     return BeautifulSoup(html, 'html.parser') if return_soup else html
 
 
-def get_list_all_categories(url):
-    # response = requests.get(url, timeout=10)
+def get_dict_all_categories(url):
+    # response = requests.get(url, timeout=20)
     # response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
     # soup = BeautifulSoup(response.text, 'html.parser')
-    soup = fetch_content(url, timeout=10, return_soup=True)
-    return soup.find('ul', class_='menu-categories ng-star-inserted').find_all('li', class_='menu-categories__link_hovered')
+    soup = fetch_content(url, timeout=20, return_soup=True)
+    # print(f'soup.prettify == {soup.find('ul', class_='menu-categories ng-star-inserted').prettify()}')
+    print(f'soup.prettify == {soup.find('ul', class_='menu-categories ng-star-inserted')}')
+
+    dict_all_categories = {}
+    # list_tags_a = soup.find('ul', class_='menu-categories ng-star-inserted').find_all('a', class_='menu-categories__link')
+    list_tags_a = soup.find_all('a', class_='ssr-menu-categories__link')
+
+    for tag in list_tags_a:
+        href = tag.get('href')  # за відсутності атрибуту 'href', поверне None замість помилки
+        text = tag.get_text(strip=True)
+        if href and text:  # якщо атрибути не порожні; Щоб уникнути додавання порожніх ключів або значень до словника.
+            dict_all_categories[href] = text
+    return dict_all_categories
 
 
 @lru_cache(maxsize = 3000)  # Для кешування повторних URL адрес
@@ -122,28 +156,62 @@ def extract_element(soup, tag, class_name):  # def get_item_any_way(soup, tag, c
     return element.get_text(strip=True) if element else ''
 
 
+def get_round(current_price):
+    if len(current_price) >= 5:
+        return float(current_price[:-4])
+    else:
+        return current_price
+
+
+def get_volume_and_ratio(volume):
+    # volume = volume[::-1]
+    pos_last_num = 0
+    for index, symbol in enumerate(volume[::-1]):
+        # if symbol in [0..9]:
+        if type(symbol) is int:
+            pos_last_num = index + 1
+            print(f'index == {index}')
+            break
+    # volume, ratio = volume[:pos_last_num], volume[pos_last_num:]
+    print(f'pos_last_num == {pos_last_num}')
+    return volume[:pos_last_num], volume[pos_last_num:]
+
+
+def trim_volume():
+    pass
+
+
+def trim_ratio():
+    pass
+
+
 # @timer_elapsed
 def parse_product_card(html_card):
     # Extract Data from a Single Product Card
     # Саме в цій функції ми визначаємо усі ті дані, які хочемо дістати з кожної товарної картки
     soup = BeautifulSoup(html_card, 'html.parser')
+
+    current_price = extract_element(soup, "div", "ft-whitespace-nowrap ft-text-22 ft-font-bold")
+    current_price = get_round(current_price)
+
+    old_price = extract_element(soup, "div", "ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo")
+    old_price = get_round(old_price)
+
+    volume = extract_element(soup, "div", "ft-typo-14-semibold xl:ft-typo-16-semibold")
+    volume, ratio = get_volume(volume)
+    # ratio = <"шт" / "кг" / "л">
     return {  # for Silpo
-        "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
-        "current_price": extract_element(soup,
-                                         "div",
-                                         "ft-whitespace-nowrap ft-text-22 ft-font-bold"),
-        "old_price": extract_element(soup,
-                                         "div",
-                                         "ft-line-through ft-text-black-87 ft-typo-14-regular xl:ft-typo"),
+        # "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
+        "current_price": current_price,
+        "old_price": old_price,
         
         "url_card": soup.find("a")["href"] if soup.find("a") else '',
         
         "title": extract_element(soup,
                                          "div",
                                          "product-card__title"),
-        "volume": extract_element(soup,
-                                         "div",
-                                         "ft-typo-14-semibold xl:ft-typo-16-semibold"),
+        "volume": volume,
+        "ratio": ratio,
         "discount": extract_element(soup,
                                          "div",
                                          "product-card-price__sale"),
@@ -231,7 +299,8 @@ def fetch_all_pages(base_url, start_page=1):
         # print('Code in fetch_all_pages, In While Loop, Before call parse_page')
         products = parse_page(html)
         
-        save_to_file(products, 'data.jsonl')
+        url_page_category = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
+        save_to_file(products, url_page_category.split('/')[4])
         # print('Code in fetch_all_pages, In While Loop, After call parse_page')
         dict_entries['count_pages'] = dict_entries.get('count_pages', 0) + 1
         dict_entries['count_entries'] = dict_entries.get('count_entries', 0) + len(products)
@@ -295,8 +364,8 @@ def main():
     # Expanding Gradually
     # Pass the URL of the next store as an argument to fetch_all_pages
     
-    base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-    all_products = fetch_all_pages(base_url, start_page=1)
+    # base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
+    # all_products = fetch_all_pages(base_url, start_page=1)
 
     # print(f'num = {get_max_pagination(base_url)}')
     # #  Найбільше число у пагінації
@@ -304,6 +373,40 @@ def main():
     # print('Дані зібрано')
     # # save_to_file(all_products, 'data.jsonl')
     # print('Дані збережено до файлу "data.jsonl"')
+
+    # url = 'https://silpo.ua'
+    url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234?page=1'
+    # dict_all_categories = get_dict_all_categories(url)
+    # print(f'categories = {dict_all_categories}')
+
+
+    # soup = fetch_content(url, timeout=20, return_soup=True)
+    # # print(f'soup.prettify == {soup.find('ul', class_='menu-categories ng-star-inserted').prettify()}')
+    # # print(f'soup.prettify == {soup.find('ul', class_='menu-categories ng-star-inserted')}')
+    
+    # list_tags_a = soup.find('div', class_='container').find_all('a')
+    # # list_tags_a = soup.find_all('a')
+    # print(f'size(list_tags_a) == {len(list_tags_a)}')
+    # for tag_a in list_tags_a:
+    #     print(f'\ntag_a.get_text(strip=True) == {tag_a.get_text(strip=True)}')
+    #     print(f"tag_a.get('href') == {tag_a.get('href')}")
+    #     print(f'tag_a == {tag_a}\n')
+
+
+    # dict_all_categories = {}
+    # # list_tags_a = soup.find('ul', class_='menu-categories ng-star-inserted').find_all('a', class_='menu-categories__link')
+    # list_tags_a = soup.find_all('a')
+    # print(f'list_tags_a:\n{list_tags_a}')
+
+    # current_price = "64.99 \u0433\u0440\u043d"
+    # current_price = ""
+    # print(get_round(current_price))
+
+    volume = "10*10г/уп"
+    volume, ratio = get_volume_and_ratio(volume)
+    print(f'volume == {volume}')
+    print(f'ratio == {ratio}')
+    # print(get_volume_and_ratio(volume))
 
 
 if __name__ == "__main__":
