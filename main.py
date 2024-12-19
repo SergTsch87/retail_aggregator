@@ -176,12 +176,15 @@ def get_volume_and_ratio(volume):
     return volume_part, ratio_part
 
 
-def trim_volume():
-    pass
+def trim_volume(volume):
+    volume = volume.replace(',', '.')
+    return eval(volume)
 
 
-def trim_ratio():
-    pass
+def trim_ratio(ratio):
+    if ratio[0] == '/':
+        ratio = ratio[1:]
+    return ratio
 
 
 # @timer_elapsed
@@ -199,6 +202,9 @@ def parse_product_card(html_card):
     volume = extract_element(soup, "div", "ft-typo-14-semibold xl:ft-typo-16-semibold")
     volume, ratio = get_volume_and_ratio(volume)
     # ratio = <"шт" / "кг" / "л">
+
+    discount = extract_element(soup, "div", "product-card-price__sale")
+    discount = discount[2:-1]
     return {  # for Silpo
         # "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
         "current_price": current_price,
@@ -211,9 +217,7 @@ def parse_product_card(html_card):
                                          "product-card__title"),
         "volume": volume,
         "ratio": ratio,
-        "discount": extract_element(soup,
-                                         "div",
-                                         "product-card-price__sale"),
+        "discount": discount,
         "rating": extract_element(soup,
                                          "span",
                                          "catalog-card-rating--value")
@@ -401,11 +405,25 @@ def main():
     # current_price = ""
     # print(get_round(current_price))
 
-    volume = "10*10г/уп"
-    volume, ratio = get_volume_and_ratio(volume)
+    # volume = "10*10г/уп"
+    # volume, ratio = get_volume_and_ratio(volume)
+    # print(f'volume == {volume}')
+    # print(f'ratio == {ratio}')
+    # # print(get_volume_and_ratio(volume))
+
+    # discount = "- 34%"
+    # discount = discount[2:-1]
+    # print(f"discount == {discount}")
+
+    # discount = "- 6%"
+    # discount = discount[2:-1]
+    # print(f"discount == {discount}")
+
+    volume = '90*23'
+    volume = volume.replace(',', '.')
     print(f'volume == {volume}')
-    print(f'ratio == {ratio}')
-    # print(get_volume_and_ratio(volume))
+    volume_part = trim_volume(volume)
+    print(f'volume_part == {volume_part}')
 
 
 if __name__ == "__main__":
