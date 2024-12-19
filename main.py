@@ -164,15 +164,13 @@ def get_round(current_price):
 
 
 def get_volume_and_ratio(volume):
-    # volume = volume[::-1]
     pos_last_num = 0
-    for index, symbol in enumerate(volume[::-1]):
-        # if symbol in [0..9]:
-        if type(symbol) is int:
+    for index, symbol in enumerate(volume):
+        if symbol.isdigit():
             pos_last_num = index + 1
-            print(f'index == {index}')
-            break
-    # volume, ratio = volume[:pos_last_num], volume[pos_last_num:]
+            # print(f'index == {index}')
+            # print(f'pos_last_num == {pos_last_num}')
+    print(f'index == {index}')
     print(f'pos_last_num == {pos_last_num}')
     return volume[:pos_last_num], volume[pos_last_num:]
 
@@ -198,7 +196,7 @@ def parse_product_card(html_card):
     old_price = get_round(old_price)
 
     volume = extract_element(soup, "div", "ft-typo-14-semibold xl:ft-typo-16-semibold")
-    volume, ratio = get_volume(volume)
+    volume, ratio = get_volume_and_ratio(volume)
     # ratio = <"шт" / "кг" / "л">
     return {  # for Silpo
         # "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
