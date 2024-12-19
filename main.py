@@ -164,15 +164,16 @@ def get_round(current_price):
 
 
 def get_volume_and_ratio(volume):
-    pos_last_num = 0
-    for index, symbol in enumerate(volume):
+    pos_last_num = len(volume)
+    for index, symbol in enumerate(reversed(volume)):
         if symbol.isdigit():
-            pos_last_num = index + 1
-            # print(f'index == {index}')
-            # print(f'pos_last_num == {pos_last_num}')
-    print(f'index == {index}')
-    print(f'pos_last_num == {pos_last_num}')
-    return volume[:pos_last_num], volume[pos_last_num:]
+            pos_last_num = len(volume) - index
+            break
+    # print(f'index == {index}')
+    # print(f'pos_last_num == {pos_last_num}')
+    volume_part = volume[:pos_last_num]
+    ratio_part = volume[pos_last_num:]
+    return volume_part, ratio_part
 
 
 def trim_volume():
