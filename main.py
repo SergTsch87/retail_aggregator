@@ -163,28 +163,39 @@ def get_round(current_price):
         return current_price
 
 
-def get_volume_and_ratio(volume):
-    pos_last_num = len(volume)
-    for index, symbol in enumerate(reversed(volume)):
-        if symbol.isdigit():
-            pos_last_num = len(volume) - index
-            break
-    # print(f'index == {index}')
-    # print(f'pos_last_num == {pos_last_num}')
-    volume_part = volume[:pos_last_num]
-    ratio_part = volume[pos_last_num:]
-    return volume_part, ratio_part
-
-
-def trim_volume(volume):
-    volume = volume.replace(',', '.')
-    return eval(volume)
-
 
 def trim_ratio(ratio):
     if ratio[0] == '/':
         ratio = ratio[1:]
     return ratio
+
+
+def trim_volume(volume):
+    volume = volume.replace(',', '.')
+    if len(volume) >= 1:
+        return eval(volume)
+    else:
+        return volume
+
+
+def get_ratio_and_volume(volume):
+    if len(volume) >= 1:
+        pos_last_num = len(volume)
+        for index, symbol in enumerate(reversed(volume)):
+            if symbol.isdigit():
+                pos_last_num = len(volume) - index
+                break
+        # if pos_last_num == len(volume) and not pos_last_num[0].isdigit():
+        if pos_last_num == len(volume) and volume[0].isalpha():
+            pos_last_num = 0
+        # print(f'index == {index}')
+        # print(f'pos_last_num == {pos_last_num}')
+        ratio_part = trim_ratio( volume[pos_last_num:] )
+        volume_part = trim_volume( volume[:pos_last_num] )
+        return ratio_part, volume_part
+    else:
+        ratio_part, volume_part = '', ''
+        return ratio_part, volume_part
 
 
 # @timer_elapsed
@@ -200,11 +211,18 @@ def parse_product_card(html_card):
     old_price = get_round(old_price)
 
     volume = extract_element(soup, "div", "ft-typo-14-semibold xl:ft-typo-16-semibold")
-    volume, ratio = get_volume_and_ratio(volume)
-    # ratio = <"шт" / "кг" / "л">
+    ratio_part, volume_part = get_ratio_and_volume(volume)
+    # ratio_part = <"шт" / "кг" / "л">
 
     discount = extract_element(soup, "div", "product-card-price__sale")
     discount = discount[2:-1]
+
+    if isinstance(current_price, (int, float)) and isinstance(volume_part, (int, float)):
+        # Якщо current_price та volume_part - числа, тоді:
+        price_per_weight = round( 1000 * ( current_price / float(volume_part) ), 2 )
+    else:
+        price_per_weight = ''
+
     return {  # for Silpo
         # "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
         "current_price": current_price,
@@ -215,8 +233,9 @@ def parse_product_card(html_card):
         "title": extract_element(soup,
                                          "div",
                                          "product-card__title"),
-        "volume": volume,
-        "ratio": ratio,
+        "ratio_part": ratio_part,
+        "volume_part": volume_part,
+        "price_per_weight": price_per_weight,
         "discount": discount,
         "rating": extract_element(soup,
                                          "span",
@@ -248,7 +267,7 @@ def get_max_pagination(base_url):
     # response = requests.get(base_url, timeout=10)
     # response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
     # soup = BeautifulSoup(response.text, 'html.parser')
-    soup = fetch_content(url, timeout=10, return_soup=True)
+    soup = fetch_content(base_url, timeout=10, return_soup=True)
     return int(soup.find('div', class_='pagination__gutter').find_next_sibling('a').get_text(strip=True))
     
 
@@ -302,8 +321,8 @@ def fetch_all_pages(base_url, start_page=1):
         # print('Code in fetch_all_pages, In While Loop, Before call parse_page')
         products = parse_page(html)
         
-        url_page_category = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
-        save_to_file(products, url_page_category.split('/')[4])
+        url_page_category = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
+        save_to_file(products, url_page_category.split('/')[4] + '.jsonl')
         # print('Code in fetch_all_pages, In While Loop, After call parse_page')
         dict_entries['count_pages'] = dict_entries.get('count_pages', 0) + 1
         dict_entries['count_entries'] = dict_entries.get('count_entries', 0) + len(products)
@@ -364,11 +383,11 @@ def main():
     # print(product[0])  # View the first product card
 
 
-    # Expanding Gradually
-    # Pass the URL of the next store as an argument to fetch_all_pages
+    # # Expanding Gradually
+    # # Pass the URL of the next store as an argument to fetch_all_pages
     
-    # base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-    # all_products = fetch_all_pages(base_url, start_page=1)
+    base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
+    all_products = fetch_all_pages(base_url, start_page=1)
 
     # print(f'num = {get_max_pagination(base_url)}')
     # #  Найбільше число у пагінації
@@ -377,10 +396,11 @@ def main():
     # # save_to_file(all_products, 'data.jsonl')
     # print('Дані збережено до файлу "data.jsonl"')
 
-    # url = 'https://silpo.ua'
-    url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234?page=1'
-    # dict_all_categories = get_dict_all_categories(url)
-    # print(f'categories = {dict_all_categories}')
+
+    # # url = 'https://silpo.ua'
+    # url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234?page=1'
+    # # dict_all_categories = get_dict_all_categories(url)
+    # # print(f'categories = {dict_all_categories}')
 
 
     # soup = fetch_content(url, timeout=20, return_soup=True)
@@ -406,10 +426,10 @@ def main():
     # print(get_round(current_price))
 
     # volume = "10*10г/уп"
-    # volume, ratio = get_volume_and_ratio(volume)
+    # ratio, volume = get_ratio_and_volume(volume)
     # print(f'volume == {volume}')
     # print(f'ratio == {ratio}')
-    # # print(get_volume_and_ratio(volume))
+    # # print(get_ratio_and_volume(volume))
 
     # discount = "- 34%"
     # discount = discount[2:-1]
@@ -419,12 +439,18 @@ def main():
     # discount = discount[2:-1]
     # print(f"discount == {discount}")
 
-    volume = '90*23'
-    volume = volume.replace(',', '.')
-    print(f'volume == {volume}')
-    volume_part = trim_volume(volume)
-    print(f'volume_part == {volume_part}')
+    # # volume = '90*23'
+    # volume = 'шт'
+    # volume = volume.replace(',', '.')
+    # print(f'volume == {volume}')
+    # # volume_part = trim_volume(volume)
+    # volume_part = eval(volume)
+    # print(f'volume_part == {volume_part}')
 
+    # ratio = 'шт'
+    # ratio_part = trim_ratio(ratio)
+    # print(f'ratio_part == {ratio_part}')
+    
 
 if __name__ == "__main__":
     main()
