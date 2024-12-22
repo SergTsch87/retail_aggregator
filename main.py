@@ -8,6 +8,14 @@
 # 1) Шукай:
 # # Саме тут слід прописати перевірку на унікальність доданих ID кожної картки
 
+# 2) Порівняй ціни на товари з однаковими вагою / назвами
+
+# 3) Виведи частотність назв підгруп, а саме:
+# чого найбільше зустрічається в асортименті, - молока, кефіру, масла чи чогось іншого?..
+
+# 4) З'ясуй, чому для деяких товарів не пораховане значення price_per_weightм,
+#  - при існуючих відповідних значеннях current_price та volume_part
+
 # !!!
 # Поки варто зробити так:
 # 1) Зібрати дані з усіх категорій Сільпо (може, ще й з кожного міста)
@@ -421,22 +429,34 @@ def get_top_volume_parts(fname, top_n=10):
 
     # Топ-N значень volume_part
     top_volumes = [volume for volume, _ in volume_counter.most_common(top_n)]
-    return top_volumes
+    return (top_volumes, volume_counter)
 
 
-def get_most_frequent_sizes(fname):
-    # Дає найчастіші розміри товарів
-    # load json
-    list_data = load_data_with_jsonl(fname)
-    # find most_frequent_sizes
-    
-    # for dict_tovar in list_data:
-    #     # # Це код для найбільших розмірів товару
-    #     if (1 < dict_tovar['volume_part'] and (dict_tovar['ratio_part'] == 'л' or dict_tovar['ratio_part'] == 'кг')) or dict_tovar['volume_part'] >= 1000:
-    
-    # for dict_tovar in list_data:
-    #     common_val = Counter(dict_tovar.values()).most_common
-    
+# 2) Порівняй ціни на товари з однаковою вагою / назвою підгрупи
+def compare_prices(fname):
+    # Виведи усі товари вагою 200 г, з назвою 'moloko', з їх цінами та url_card's
+    file_path = get_file_path(fname)
+    list_products = []
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            try:
+                record = json.loads(line)
+                # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'moloko':
+                # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'maslo':
+                # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'yogurt':
+                # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'syrok':
+                # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'syr':
+                # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'vershky':
+                # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'napii':
+                # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'kefir':
+                if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'smetana':
+                    list_products.append(record)
+                # dict_volume_counter = get_top_volume_parts(fname, top_n=10)[1]
+                # if dict_volume_counter[record['volume_part']] == 
+            except (json.JSONDecodeError, KeyError):
+                continue
+    return list_products
+
 
 @timer_elapsed
 def main():
@@ -465,10 +485,13 @@ def main():
     fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
     list_data = load_data_with_jsonl(fname)
 
-    top_volumes_freq = get_top_volume_parts(fname, top_n=10)
-    print(f'top_volumes_freq == {top_volumes_freq[:10]}')
-        # volume_counter == Counter({200: 176, 180: 150, 300: 148, 100: 121, 400: 102, 350: 97, 500: 97, 1: 97, 900: 91, 250: 86})
-        # Як бачимо, більшість товарів мають пакування у 100..500 г
+    # top_volumes_freq = get_top_volume_parts(fname, top_n=10)
+    # print(f'top_volumes_freq == {top_volumes_freq[:10]}')
+    #     # volume_counter == Counter({200: 176, 180: 150, 300: 148, 100: 121, 400: 102, 350: 97, 500: 97, 1: 97, 900: 91, 250: 86})
+    #     # Як бачимо, більшість товарів мають пакування у 100..500 г
+
+    list_prods = compare_prices(fname)
+    print(f'list_prods == {list_prods}')
 
     # print(f'{top_volumes_freq.__name__} == {top_volumes_freq}')
     # print(f'len == {len(list_data)}\nlist_data == {list_data}')
