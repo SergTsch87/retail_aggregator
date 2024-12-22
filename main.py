@@ -37,6 +37,8 @@ from pathlib import Path
 
 from iteration_utilities import duplicates
 
+from collections import Counter
+
 
 # ---------- Utility functions --------------------
 def is_connected():    # Для перевірки доступності інтернету перед відправленням запиту
@@ -382,6 +384,60 @@ def fetch_all_stores(store_urls):
     return all_stores
 
 
+# !!!
+# Краще прибрати цей код
+# # !!! Рішення з використанням eval() є небезпечним!
+# # Які є засоби убезпечити код в таких випадках?..
+# def load_data_with_jsonl(fname, str_statement):
+#     # Витягає дані, які відповідають певній умові коду str_statement
+#     file_path = get_file_path(fname)
+#     with open(file_path, 'r', encoding='utf-8') as f:
+#         return [json.loads(line) for line in f if eval(str_statement)]
+
+# !!! Рішення з використанням eval() є небезпечним!
+# Які є засоби убезпечити код в таких випадках?..
+def load_data_with_jsonl(fname):
+    # Витягає дані, які відповідають певній умові коду str_statement
+    file_path = get_file_path(fname)
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return [json.loads(line) for line in f]
+    # Який є швидший спосіб витягти усі записи з файлу?
+
+
+def get_top_volume_parts(fname, top_n=10):
+    volume_counter = Counter()
+
+    # Перший прохід - обчислення частоти volume_part
+    file_path = get_file_path(fname)
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            try:
+                record = json.loads(line)
+                volume_counter[record['volume_part']] += 1
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+        print(f'volume_counter == {volume_counter}')
+
+    # Топ-N значень volume_part
+    top_volumes = [volume for volume, _ in volume_counter.most_common(top_n)]
+    return top_volumes
+
+
+def get_most_frequent_sizes(fname):
+    # Дає найчастіші розміри товарів
+    # load json
+    list_data = load_data_with_jsonl(fname)
+    # find most_frequent_sizes
+    
+    # for dict_tovar in list_data:
+    #     # # Це код для найбільших розмірів товару
+    #     if (1 < dict_tovar['volume_part'] and (dict_tovar['ratio_part'] == 'л' or dict_tovar['ratio_part'] == 'кг')) or dict_tovar['volume_part'] >= 1000:
+    
+    # for dict_tovar in list_data:
+    #     common_val = Counter(dict_tovar.values()).most_common
+    
+
 @timer_elapsed
 def main():
     logging.basicConfig(
@@ -402,8 +458,22 @@ def main():
     # # Expanding Gradually
     # # Pass the URL of the next store as an argument to fetch_all_pages
     
-    base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-    all_products = fetch_all_pages(base_url, start_page=1)
+    # base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
+    # all_products = fetch_all_pages(base_url, start_page=1)
+
+
+    fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
+    list_data = load_data_with_jsonl(fname)
+
+    top_volumes_freq = get_top_volume_parts(fname, top_n=10)
+    print(f'top_volumes_freq == {top_volumes_freq[:10]}')
+        # volume_counter == Counter({200: 176, 180: 150, 300: 148, 100: 121, 400: 102, 350: 97, 500: 97, 1: 97, 900: 91, 250: 86})
+        # Як бачимо, більшість товарів мають пакування у 100..500 г
+
+    # print(f'{top_volumes_freq.__name__} == {top_volumes_freq}')
+    # print(f'len == {len(list_data)}\nlist_data == {list_data}')
+    # common_val = Counter(list_data.values()).most_common
+    # print(f'common_val == {common_val}')
 
 
     # print(f'num = {get_max_pagination(base_url)}')
