@@ -236,15 +236,14 @@ def parse_product_card(html_card):
     id_tovar = url_card.split('-')[-1]
 
     return {  # for Silpo
-        # "url_page_category": 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234',
+        "id_tovar": id_tovar,
+        "url_card": url_card,        
         "current_price": current_price,
         "old_price": old_price,        
-        "url_card": url_card,        
-        "title": title,
-        "id_tovar": id_tovar,
         "ratio_part": ratio_part,
         "volume_part": volume_part,
         "price_per_weight": price_per_weight,
+        "title": title,
         "discount": discount,
         "rating": extract_element(soup,
                                          "span",
@@ -265,11 +264,11 @@ def parse_page(html_page):
     set_ids = set()
     # Саме тут слід прописати перевірку на унікальність доданих ID кожної картки
     # products = [parse_product_card(str(card)) for card in product_cards if parse_product_card(str(card))['id_tovar'] not in set_ids]
-    # products
     for card in product_cards:
-        if parse_product_card(str(card))['id_tovar'] not in set_ids:
-            products.extend( parse_product_card( str(card) ) )
-            set_ids.add( parse_product_card( str(card) )['id_tovar'] )
+        current_card = parse_product_card(str(card))
+        if current_card['id_tovar'] not in set_ids:
+            products.append( current_card )
+            set_ids.add( current_card['id_tovar'] )
     
     if not products or "Товари закінчилися" in html_page:   # Перевірка на порожній список або помилковий номер сторінки
         return []
@@ -403,8 +402,8 @@ def main():
     # # Expanding Gradually
     # # Pass the URL of the next store as an argument to fetch_all_pages
     
-    # base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-    # all_products = fetch_all_pages(base_url, start_page=1)
+    base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
+    all_products = fetch_all_pages(base_url, start_page=1)
 
 
     # print(f'num = {get_max_pagination(base_url)}')
