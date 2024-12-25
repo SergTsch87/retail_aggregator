@@ -268,7 +268,7 @@ def parse_page(html_page):
     # Extract All Product Cards on a Page
     # Parse all cards in a container.
     
-    products = []
+    products = {}
     
     soup = BeautifulSoup(html_page, 'html.parser')
     product_cards = soup.find_all('div', class_="products-list__item")  # for Silpo
@@ -279,7 +279,9 @@ def parse_page(html_page):
     for card in product_cards:
         current_card = parse_product_card(str(card))
         if current_card['id_tovar'] not in set_ids:
-            products.append( current_card )
+            products[current_card['id_tovar']] = current_card
+            # print(f'current_card == {current_card}')
+            # print(f'products == {products}')
             set_ids.add( current_card['id_tovar'] )
     
     if not products or "Товари закінчилися" in html_page:   # Перевірка на порожній список або помилковий номер сторінки
@@ -350,6 +352,7 @@ def fetch_all_pages(base_url, start_page=1):
         products = parse_page(html)
         
         url_page_category = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
+        # print(f'\n\nproducts == {products}\n\n')
         save_to_file(products, url_page_category.split('/')[4] + '.jsonl')
         # print('Code in fetch_all_pages, In While Loop, After call parse_page')
         dict_entries['count_pages'] = dict_entries.get('count_pages', 0) + 1
@@ -360,7 +363,8 @@ def fetch_all_pages(base_url, start_page=1):
         print(f"\ncount_pages = {dict_entries['count_pages']}\ncount_entries = {dict_entries['count_entries']}\n")
         
         # all_pages_data[f'page_{page_number}'] = products
-        all_products.extend(products)
+        # all_products.extend(products)
+        all_products.append(products)
         page_number += 1
 
         previous_url = final_url  # Зберігаємо URL для порівняння у наступному циклі
@@ -379,7 +383,8 @@ def save_to_file(data, fname='data.jsonl'):
     # print('Begin code in save_to_file')
     file_path = get_file_path(fname)
     with file_path.open(mode='a', encoding='utf-8') as file:
-        for record in data:
+        # for record_key, record_value in data.items():
+        for record in data.items():
             file.write(json.dumps(record) + '\n')
     # print('The End code in save_to_file')
     
@@ -410,7 +415,8 @@ def load_data_with_jsonl(fname):
     # Витягає дані, які відповідають певній умові коду str_statement
     file_path = get_file_path(fname)
     with open(file_path, 'r', encoding='utf-8') as f:
-        return [json.loads(line) for line in f]
+        # return [json.loads(line) for line in f]
+        return json.load(fname)
     # Який є швидший спосіб витягти усі записи з файлу?
 
 
@@ -486,8 +492,10 @@ def get_sorted_records(fname):
     # dict_sorted_records = sorted(records, key = lambda x: x.get('price_per_weight', 0), reverse=True)
     
     # dict_sorted_records = sorted(records, key = lambda x: getattr(x, 'price_per_weight'), reverse=True)
-    dict_sorted_records = sorted(records.items(), key = lambda x: x[1], reverse=True)
     # dict_sorted_records = sorted(records, key = lambda x: getattr(x, 'current_price'), reverse=True)
+    
+    # dict_sorted_records = sorted(records.items(), key = lambda x: x[1], reverse=True)
+    dict_sorted_records = sorted(records.items(), key = get_price_per_weight, reverse=True)
     return dict_sorted_records
     # return records
 
@@ -517,12 +525,12 @@ def main():
     # # Expanding Gradually
     # # Pass the URL of the next store as an argument to fetch_all_pages
     
-    # base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-    # all_products = fetch_all_pages(base_url, start_page=1)
+    base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
+    all_products = fetch_all_pages(base_url, start_page=1)
 
 
-    # fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
-    # list_data = load_data_with_jsonl(fname)
+    fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
+    list_data = load_data_with_jsonl(fname)
 
     # top_volumes_freq = get_top_volume_parts(fname, top_n=10)
     # print(f'top_volumes_freq == {top_volumes_freq[:10]}')
@@ -540,22 +548,22 @@ def main():
     # save_to_file(dict_sorted_products, file_name)
 
 
-    list_of_dicts = {908058: {"url_card": "/product/maslo-solodkovershkove-molokiia-73-908058", "current_price": 69.99, "old_price": 99.0, "ratio_part": "\u0433", "volume_part": 180, "price_per_weight": 388.83, "title": "\u041c\u0430\u0441\u043b\u043e \u0441\u043e\u043b\u043e\u0434\u043a\u043e\u0432\u0435\u0440\u0448\u043a\u043e\u0432\u0435 \u00ab\u041c\u043e\u043b\u043e\u043a\u0456\u044f\u00bb 73%", "discount": "29", "rating": "4.5"},
-                    28734: {"url_card": "/product/moloko-selianske-pytne-ultrapasteryzovane-2-5-28734", "current_price": 34.99, "old_price": 48.19, "ratio_part": "\u0433", "volume_part": 900, "price_per_weight": 38.88, "title": "\u041c\u043e\u043b\u043e\u043a\u043e \u00ab\u0421\u0435\u043b\u044f\u043d\u0441\u044c\u043a\u0435\u00bb \u043f\u0438\u0442\u043d\u0435 \u0443\u043b\u044c\u0442\u0440\u0430\u043f\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u0435 2,5%", "discount": "27", "rating": "4.9"},
-                    947496: {"url_card": "/product/yogurt-delissimo-fantasia-z-kulkamy-zlakovymy-v-shokoladnii-glazuri-6-3-947496", "current_price": 27.99, "old_price": 34.99, "ratio_part": "\u0433", "volume_part": 100, "price_per_weight": 279.9, "title": "\u0419\u043e\u0433\u0443\u0440\u0442 \u0414\u0435\u043b\u0456\u0441\u0441\u0456\u043c\u043e Fantasia \u0437 \u043a\u0443\u043b\u044c\u043a\u0430\u043c\u0438 \u0437\u043b\u0430\u043a\u043e\u0432\u0438\u043c\u0438 \u0432 \u0448\u043e\u043a\u043e\u043b\u0430\u0434\u043d\u0456\u0439 \u0433\u043b\u0430\u0437\u0443\u0440\u0456 6,3%", "discount": "20", "rating": ""},
-                    799508: {"url_card": "/product/moloko-ultrapasteryzovane-premiia-2-5-799508", "current_price": 46.99, "old_price": "", "ratio_part": "\u0433", "volume_part": 900, "price_per_weight": 52.21, "title": "\u041c\u043e\u043b\u043e\u043a\u043e \u0443\u043b\u044c\u0442\u0440\u0430\u043f\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u0435 \u00ab\u041f\u0440\u0435\u043c\u0456\u044f\u00bb\u00ae 2,5%", "discount": "", "rating": "4.2"},
-                    939585: {"url_card": "/product/yogurt-molokiia-bilyi-gustyi-3-939585", "current_price": 83.99, "old_price": 129.0, "ratio_part": "\u0433", "volume_part": 1000, "price_per_weight": 83.99, "title": "\u0419\u043e\u0433\u0443\u0440\u0442 \u041c\u043e\u043b\u043e\u043a\u0456\u044f \u0431\u0456\u043b\u0438\u0439 \u0433\u0443\u0441\u0442\u0438\u0439 3%", "discount": "35", "rating": ""}}
+    # list_of_dicts = {908058: {"url_card": "/product/maslo-solodkovershkove-molokiia-73-908058", "current_price": 69.99, "old_price": 99.0, "ratio_part": "\u0433", "volume_part": 180, "price_per_weight": 388.83, "title": "\u041c\u0430\u0441\u043b\u043e \u0441\u043e\u043b\u043e\u0434\u043a\u043e\u0432\u0435\u0440\u0448\u043a\u043e\u0432\u0435 \u00ab\u041c\u043e\u043b\u043e\u043a\u0456\u044f\u00bb 73%", "discount": "29", "rating": "4.5"},
+    #                 28734: {"url_card": "/product/moloko-selianske-pytne-ultrapasteryzovane-2-5-28734", "current_price": 34.99, "old_price": 48.19, "ratio_part": "\u0433", "volume_part": 900, "price_per_weight": 38.88, "title": "\u041c\u043e\u043b\u043e\u043a\u043e \u00ab\u0421\u0435\u043b\u044f\u043d\u0441\u044c\u043a\u0435\u00bb \u043f\u0438\u0442\u043d\u0435 \u0443\u043b\u044c\u0442\u0440\u0430\u043f\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u0435 2,5%", "discount": "27", "rating": "4.9"},
+    #                 947496: {"url_card": "/product/yogurt-delissimo-fantasia-z-kulkamy-zlakovymy-v-shokoladnii-glazuri-6-3-947496", "current_price": 27.99, "old_price": 34.99, "ratio_part": "\u0433", "volume_part": 100, "price_per_weight": 279.9, "title": "\u0419\u043e\u0433\u0443\u0440\u0442 \u0414\u0435\u043b\u0456\u0441\u0441\u0456\u043c\u043e Fantasia \u0437 \u043a\u0443\u043b\u044c\u043a\u0430\u043c\u0438 \u0437\u043b\u0430\u043a\u043e\u0432\u0438\u043c\u0438 \u0432 \u0448\u043e\u043a\u043e\u043b\u0430\u0434\u043d\u0456\u0439 \u0433\u043b\u0430\u0437\u0443\u0440\u0456 6,3%", "discount": "20", "rating": ""},
+    #                 799508: {"url_card": "/product/moloko-ultrapasteryzovane-premiia-2-5-799508", "current_price": 46.99, "old_price": "", "ratio_part": "\u0433", "volume_part": 900, "price_per_weight": 52.21, "title": "\u041c\u043e\u043b\u043e\u043a\u043e \u0443\u043b\u044c\u0442\u0440\u0430\u043f\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u0435 \u00ab\u041f\u0440\u0435\u043c\u0456\u044f\u00bb\u00ae 2,5%", "discount": "", "rating": "4.2"},
+    #                 939585: {"url_card": "/product/yogurt-molokiia-bilyi-gustyi-3-939585", "current_price": 83.99, "old_price": 129.0, "ratio_part": "\u0433", "volume_part": 1000, "price_per_weight": 83.99, "title": "\u0419\u043e\u0433\u0443\u0440\u0442 \u041c\u043e\u043b\u043e\u043a\u0456\u044f \u0431\u0456\u043b\u0438\u0439 \u0433\u0443\u0441\u0442\u0438\u0439 3%", "discount": "35", "rating": ""}}
     
-    # list_of_dicts = [{"id_tovar": "908058", "url_card": "/product/maslo-solodkovershkove-molokiia-73-908058", "current_price": 69.99, "old_price": 99.0, "ratio_part": "\u0433", "volume_part": 180, "price_per_weight": 388.83, "title": "\u041c\u0430\u0441\u043b\u043e \u0441\u043e\u043b\u043e\u0434\u043a\u043e\u0432\u0435\u0440\u0448\u043a\u043e\u0432\u0435 \u00ab\u041c\u043e\u043b\u043e\u043a\u0456\u044f\u00bb 73%", "discount": "29", "rating": "4.5"},
-    #                 {"id_tovar": "28734", "url_card": "/product/moloko-selianske-pytne-ultrapasteryzovane-2-5-28734", "current_price": 34.99, "old_price": 48.19, "ratio_part": "\u0433", "volume_part": 900, "price_per_weight": 38.88, "title": "\u041c\u043e\u043b\u043e\u043a\u043e \u00ab\u0421\u0435\u043b\u044f\u043d\u0441\u044c\u043a\u0435\u00bb \u043f\u0438\u0442\u043d\u0435 \u0443\u043b\u044c\u0442\u0440\u0430\u043f\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u0435 2,5%", "discount": "27", "rating": "4.9"},
-    #                 {"id_tovar": "947496", "url_card": "/product/yogurt-delissimo-fantasia-z-kulkamy-zlakovymy-v-shokoladnii-glazuri-6-3-947496", "current_price": 27.99, "old_price": 34.99, "ratio_part": "\u0433", "volume_part": 100, "price_per_weight": 279.9, "title": "\u0419\u043e\u0433\u0443\u0440\u0442 \u0414\u0435\u043b\u0456\u0441\u0441\u0456\u043c\u043e Fantasia \u0437 \u043a\u0443\u043b\u044c\u043a\u0430\u043c\u0438 \u0437\u043b\u0430\u043a\u043e\u0432\u0438\u043c\u0438 \u0432 \u0448\u043e\u043a\u043e\u043b\u0430\u0434\u043d\u0456\u0439 \u0433\u043b\u0430\u0437\u0443\u0440\u0456 6,3%", "discount": "20", "rating": ""},
-    #                 {"id_tovar": "799508", "url_card": "/product/moloko-ultrapasteryzovane-premiia-2-5-799508", "current_price": 46.99, "old_price": "", "ratio_part": "\u0433", "volume_part": 900, "price_per_weight": 52.21, "title": "\u041c\u043e\u043b\u043e\u043a\u043e \u0443\u043b\u044c\u0442\u0440\u0430\u043f\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u0435 \u00ab\u041f\u0440\u0435\u043c\u0456\u044f\u00bb\u00ae 2,5%", "discount": "", "rating": "4.2"},
-    #                 {"id_tovar": "939585", "url_card": "/product/yogurt-molokiia-bilyi-gustyi-3-939585", "current_price": 83.99, "old_price": 129.0, "ratio_part": "\u0433", "volume_part": 1000, "price_per_weight": 83.99, "title": "\u0419\u043e\u0433\u0443\u0440\u0442 \u041c\u043e\u043b\u043e\u043a\u0456\u044f \u0431\u0456\u043b\u0438\u0439 \u0433\u0443\u0441\u0442\u0438\u0439 3%", "discount": "35", "rating": ""}]
+    # # list_of_dicts = [{"id_tovar": "908058", "url_card": "/product/maslo-solodkovershkove-molokiia-73-908058", "current_price": 69.99, "old_price": 99.0, "ratio_part": "\u0433", "volume_part": 180, "price_per_weight": 388.83, "title": "\u041c\u0430\u0441\u043b\u043e \u0441\u043e\u043b\u043e\u0434\u043a\u043e\u0432\u0435\u0440\u0448\u043a\u043e\u0432\u0435 \u00ab\u041c\u043e\u043b\u043e\u043a\u0456\u044f\u00bb 73%", "discount": "29", "rating": "4.5"},
+    # #                 {"id_tovar": "28734", "url_card": "/product/moloko-selianske-pytne-ultrapasteryzovane-2-5-28734", "current_price": 34.99, "old_price": 48.19, "ratio_part": "\u0433", "volume_part": 900, "price_per_weight": 38.88, "title": "\u041c\u043e\u043b\u043e\u043a\u043e \u00ab\u0421\u0435\u043b\u044f\u043d\u0441\u044c\u043a\u0435\u00bb \u043f\u0438\u0442\u043d\u0435 \u0443\u043b\u044c\u0442\u0440\u0430\u043f\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u0435 2,5%", "discount": "27", "rating": "4.9"},
+    # #                 {"id_tovar": "947496", "url_card": "/product/yogurt-delissimo-fantasia-z-kulkamy-zlakovymy-v-shokoladnii-glazuri-6-3-947496", "current_price": 27.99, "old_price": 34.99, "ratio_part": "\u0433", "volume_part": 100, "price_per_weight": 279.9, "title": "\u0419\u043e\u0433\u0443\u0440\u0442 \u0414\u0435\u043b\u0456\u0441\u0441\u0456\u043c\u043e Fantasia \u0437 \u043a\u0443\u043b\u044c\u043a\u0430\u043c\u0438 \u0437\u043b\u0430\u043a\u043e\u0432\u0438\u043c\u0438 \u0432 \u0448\u043e\u043a\u043e\u043b\u0430\u0434\u043d\u0456\u0439 \u0433\u043b\u0430\u0437\u0443\u0440\u0456 6,3%", "discount": "20", "rating": ""},
+    # #                 {"id_tovar": "799508", "url_card": "/product/moloko-ultrapasteryzovane-premiia-2-5-799508", "current_price": 46.99, "old_price": "", "ratio_part": "\u0433", "volume_part": 900, "price_per_weight": 52.21, "title": "\u041c\u043e\u043b\u043e\u043a\u043e \u0443\u043b\u044c\u0442\u0440\u0430\u043f\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u0435 \u00ab\u041f\u0440\u0435\u043c\u0456\u044f\u00bb\u00ae 2,5%", "discount": "", "rating": "4.2"},
+    # #                 {"id_tovar": "939585", "url_card": "/product/yogurt-molokiia-bilyi-gustyi-3-939585", "current_price": 83.99, "old_price": 129.0, "ratio_part": "\u0433", "volume_part": 1000, "price_per_weight": 83.99, "title": "\u0419\u043e\u0433\u0443\u0440\u0442 \u041c\u043e\u043b\u043e\u043a\u0456\u044f \u0431\u0456\u043b\u0438\u0439 \u0433\u0443\u0441\u0442\u0438\u0439 3%", "discount": "35", "rating": ""}]
 
-    print(sorted(list_of_dicts.items(), key = get_price_per_weight, reverse=True))
-        #  price_per_weight = item[1].get("price_per_weight", 0)
-        #                    ~~~~^^^
-        # KeyError: 1
+    # print(sorted(list_of_dicts.items(), key = get_price_per_weight, reverse=True))
+    #     #  price_per_weight = item[1].get("price_per_weight", 0)
+    #     #                    ~~~~^^^
+    #     # KeyError: 1
 
 
     # print(f'{top_volumes_freq.__name__} == {top_volumes_freq}')
