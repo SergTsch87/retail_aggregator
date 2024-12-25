@@ -236,7 +236,8 @@ def parse_product_card(html_card):
     discount = extract_element(soup, "div", "product-card-price__sale")
     discount = discount[2:-1]
 
-    if isinstance(current_price, (int, float)) and isinstance(volume_part, (int, float)) and ratio_part.find('шт') < 0 and ratio_part.find('уп') < 0:
+    # if isinstance(current_price, (int, float)) and isinstance(volume_part, (int, float)) and 'шт' not in ratio_part and 'уп' not in ratio_part: # ratio_part.find('шт') < 0 and ratio_part.find('уп') < 0:
+    if isinstance(current_price, (int, float)) and isinstance(volume_part, (int, float)) and all(item not in ratio_part for item in  ['шт', 'кг', 'л', 'уп'] ):
         # Якщо current_price та volume_part - числа, а рядок ratio_part не містить 'шт' / 'уп', тоді:
         price_per_weight = round( 1000 * ( current_price / float(volume_part) ), 2 )
     else:
@@ -246,15 +247,17 @@ def parse_product_card(html_card):
     
     url_card = soup.find("a")["href"] if soup.find("a") else ''
     id_tovar = url_card.split('-')[-1]
+    subgroup = url_card.split('/')[2].split('-')[0]
 
     return {  # for Silpo
         "id_tovar": id_tovar,
+        "price_per_weight": price_per_weight,
+        "subgroup": subgroup,
         "url_card": url_card,        
         "current_price": current_price,
         "old_price": old_price,        
-        "ratio_part": ratio_part,
         "volume_part": volume_part,
-        "price_per_weight": price_per_weight,
+        "ratio_part": ratio_part,
         "title": title,
         "discount": discount,
         "rating": extract_element(soup,
@@ -279,10 +282,13 @@ def parse_page(html_page):
     for card in product_cards:
         current_card = parse_product_card(str(card))
         if current_card['id_tovar'] not in set_ids:
-            products[current_card['id_tovar']] = current_card
+            # Винесемо id_tovar зі словника:
+            tmp_id_tovar = current_card['id_tovar']
+            del current_card['id_tovar']
+            products[tmp_id_tovar] = current_card
             # print(f'current_card == {current_card}')
             # print(f'products == {products}')
-            set_ids.add( current_card['id_tovar'] )
+            set_ids.add( tmp_id_tovar )
     
     if not products or "Товари закінчилися" in html_page:   # Перевірка на порожній список або помилковий номер сторінки
         return []
