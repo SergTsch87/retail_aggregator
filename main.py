@@ -49,6 +49,7 @@ from iteration_utilities import duplicates
 
 from collections import Counter
 
+import os.path
 
 # ---------- Utility functions --------------------
 def is_connected():    # Для перевірки доступності інтернету перед відправленням запиту
@@ -197,6 +198,12 @@ def trim_volume(volume):
 
 
 def get_ratio_and_volume(volume):
+    """
+    Виокремлюємо з текст. змінної volume нові дві змінні:
+        ratio_part (text; міра обсягу)
+    та
+        volume_part (float; розмір обсягу)
+    """
     if len(volume) >= 1:
         pos_last_num = len(volume)
         for index, symbol in enumerate(reversed(volume)):
@@ -216,10 +223,75 @@ def get_ratio_and_volume(volume):
         return ratio_part, volume_part
 
 
+def converting_volume_measure(volume_part, ratio_part):
+    """
+    Зводимо усі ratio_part до дрібніших мір (г та мл) з відповідним обчисленням для volume_part
+    """
+    # Словник з коефіцієнтами конвертації до базових одиниць
+    dict_conversation_factors = {
+        'кг': ('г', 1000),
+        # 'мл': ('мл', 1),
+        'л': ('мл', 1000)
+    }
+
+    # for unit, (base_unit, factor) in dict_conversation_factors.items():
+    #     if unit in ratio_part:
+    #         ratio_part = ratio_part.replace(unit, base_unit)
+    #         volume_part *= factor
+    #         # print(f'Inside def converting_volume_measure:\nratio_part == {ratio_part}\nvolume_part == {volume_part}')
+    #         break   # Припинити після першої знайденої відповідности
+
+    # return int(volume_part), ratio_part
+
+    if isinstance(volume_part, (int, float)) and len(ratio_part) > 0:
+        for unit, (base_unit, factor) in dict_conversation_factors.items():
+            if 'мл' in ratio_part:
+                return int(volume_part), ratio_part
+            elif unit in ratio_part:
+                ratio_part = ratio_part.replace(unit, base_unit)
+                volume_part *= factor
+                # print(f'Inside def converting_volume_measure:\nratio_part == {ratio_part}\nvolume_part == {volume_part}')
+                # break   # Припинити після першої знайденої відповідности
+                return int(volume_part), ratio_part
+    # else:
+    #     return volume_part, ratio_part
+    return volume_part, ratio_part  # тут повертає також і "2.0 г/уп", "2.0 г/шт"
+
+    # Старий неоптимізований код:
+    # if 'кг' in ratio_part:
+    #     ratio_part = ratio_part.replace('кг', 'г')
+    #     volume_part *= 1000
+    # if ('л' in ratio_part) and not ('мл' in ratio_part):
+    #     ratio_part = ratio_part.replace('л', 'мл')
+    #     volume_part *= 1000
+    # return int(volume_part), ratio_part
+
+
+def get_id_tovar(url_card):
+    return str( hash( 'silpo.ua' + url_card[10:] ) % 10 ** 8 )   # обтинає хеш до 8-ми цифр
+
+
+def get_real_discount(current_price, old_price):
+    if isinstance(current_price, (int, float)) and isinstance(old_price, (int, float)):
+        return int(((old_price - current_price) / old_price) * 100)
+
+
+def get_price_per_weight(current_price, volume_part, ratio_part):
+    # if isinstance(current_price, (int, float)) and isinstance(volume_part, (int, float)) and 'шт' not in ratio_part and 'уп' not in ratio_part: # ratio_part.find('шт') < 0 and ratio_part.find('уп') < 0:
+    if isinstance(current_price, (int, float)) and isinstance(volume_part, (int, float)) and ('г' in ratio_part or 'мл' in ratio_part):
+    # and all(item not in ratio_part for item in  ['шт', 'кг', 'л', 'уп'] ):
+        # Якщо current_price та volume_part - числа, а рядок ratio_part не містить 'шт' / 'уп', тоді:
+        # price_per_weight = round( 1000 * ( current_price / float(volume_part) ), 2 )
+        return round( 1000 * ( current_price / float(volume_part) ), 2 )
+    else:
+        return ''
+
+
 # @timer_elapsed
 def parse_product_card(html_card):
     # Extract Data from a Single Product Card
     # Саме в цій функції ми визначаємо усі ті дані, які хочемо дістати з кожної товарної картки
+    time.sleep(0.2)
     soup = BeautifulSoup(html_card, 'html.parser')
 
     current_price = extract_element(soup, "div", "ft-whitespace-nowrap ft-text-22 ft-font-bold")
@@ -234,32 +306,45 @@ def parse_product_card(html_card):
     # volume_part = <1, 0.5, 125>
 
     discount = extract_element(soup, "div", "product-card-price__sale")
-    discount = discount[2:-1]
-
-    # if isinstance(current_price, (int, float)) and isinstance(volume_part, (int, float)) and 'шт' not in ratio_part and 'уп' not in ratio_part: # ratio_part.find('шт') < 0 and ratio_part.find('уп') < 0:
-    if isinstance(current_price, (int, float)) and isinstance(volume_part, (int, float)) and all(item not in ratio_part for item in  ['шт', 'кг', 'л', 'уп'] ):
-        # Якщо current_price та volume_part - числа, а рядок ratio_part не містить 'шт' / 'уп', тоді:
-        price_per_weight = round( 1000 * ( current_price / float(volume_part) ), 2 )
+    # if discount != '':
+    if len(discount) >= 3:
+        discount = int(discount[2:-1])
+        real_discount = get_real_discount(current_price, old_price)
+        differ_discounts = real_discount - discount
     else:
-        price_per_weight = ''
+        differ_discounts = ''
+
+    # print(f'volume_part == {volume_part}')
+    # print(f'ratio_part == {ratio_part}')
+    volume_part, ratio_part = converting_volume_measure(volume_part, ratio_part)
+
+    price_per_weight = get_price_per_weight(current_price, volume_part, ratio_part)
 
     title = extract_element(soup, "div", "product-card__title")
     
-    url_card = soup.find("a")["href"] if soup.find("a") else ''
-    id_tovar = url_card.split('-')[-1]
-    subgroup = url_card.split('/')[2].split('-')[0]
+    try:
+        url_card = soup.find("a")["href"] if soup.find("a") else ''
+        id_tovar = get_id_tovar(url_card)
+
+        print(f'url_card == {url_card}')
+        subgroup = url_card.split('/')[2].split('-')[0]
+    except requests.RequestException as e:
+            logging.error(f"Attempt failed for {url_card}.")
+            print(f'\nInside Except:\nurl_card == {url_card}\n')
+            return handle_exception(e, context=f"Fetching URL {url_card}")
 
     return {  # for Silpo
         "id_tovar": id_tovar,
         "price_per_weight": price_per_weight,
         "subgroup": subgroup,
-        "url_card": url_card,        
+        "url_card": url_card,
         "current_price": current_price,
-        "old_price": old_price,        
+        "old_price": old_price,
         "volume_part": volume_part,
         "ratio_part": ratio_part,
-        "title": title,
         "discount": discount,
+        "differ_discounts": differ_discounts,
+        "title": title,
         "rating": extract_element(soup,
                                          "span",
                                          "catalog-card-rating--value")
@@ -421,8 +506,8 @@ def load_data_with_jsonl(fname):
     # Витягає дані, які відповідають певній умові коду str_statement
     file_path = get_file_path(fname)
     with open(file_path, 'r', encoding='utf-8') as f:
-        # return [json.loads(line) for line in f]
-        return json.load(fname)
+        return [json.loads(line) for line in f]
+        # return json.load(fname)
     # Який є швидший спосіб витягти усі записи з файлу?
 
 
@@ -501,12 +586,17 @@ def get_sorted_records(fname):
     # dict_sorted_records = sorted(records, key = lambda x: getattr(x, 'current_price'), reverse=True)
     
     # dict_sorted_records = sorted(records.items(), key = lambda x: x[1], reverse=True)
-    dict_sorted_records = sorted(records.items(), key = get_price_per_weight, reverse=True)
+    dict_sorted_records = sorted(records.items(), key = get_val_price_per_weight, reverse=True)
     return dict_sorted_records
     # return records
 
+#     dict_sorted_records = sorted(records.items(), key = get_val_price_per_weight, reverse=True)
+#                                  ^^^^^^^^^^^^^
+# AttributeError: 'list' object has no attribute 'items'
 
-def get_price_per_weight(item):
+
+
+def get_val_price_per_weight(item):
     price_per_weight = item[1].get("price_per_weight", 0)
     return price_per_weight
 
@@ -532,11 +622,13 @@ def main():
     # # Pass the URL of the next store as an argument to fetch_all_pages
     
     base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-    all_products = fetch_all_pages(base_url, start_page=1)
-
-
     fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
-    list_data = load_data_with_jsonl(fname)
+    
+    file_path = get_file_path(fname)
+    if not os.path.isfile(file_path):   # якщо файлу ще нема, тоді створімо його:
+        all_products = fetch_all_pages(base_url, start_page=1)
+
+    # list_data = load_data_with_jsonl(fname)
 
     # top_volumes_freq = get_top_volume_parts(fname, top_n=10)
     # print(f'top_volumes_freq == {top_volumes_freq[:10]}')
@@ -566,7 +658,7 @@ def main():
     # #                 {"id_tovar": "799508", "url_card": "/product/moloko-ultrapasteryzovane-premiia-2-5-799508", "current_price": 46.99, "old_price": "", "ratio_part": "\u0433", "volume_part": 900, "price_per_weight": 52.21, "title": "\u041c\u043e\u043b\u043e\u043a\u043e \u0443\u043b\u044c\u0442\u0440\u0430\u043f\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u043e\u0432\u0430\u043d\u0435 \u00ab\u041f\u0440\u0435\u043c\u0456\u044f\u00bb\u00ae 2,5%", "discount": "", "rating": "4.2"},
     # #                 {"id_tovar": "939585", "url_card": "/product/yogurt-molokiia-bilyi-gustyi-3-939585", "current_price": 83.99, "old_price": 129.0, "ratio_part": "\u0433", "volume_part": 1000, "price_per_weight": 83.99, "title": "\u0419\u043e\u0433\u0443\u0440\u0442 \u041c\u043e\u043b\u043e\u043a\u0456\u044f \u0431\u0456\u043b\u0438\u0439 \u0433\u0443\u0441\u0442\u0438\u0439 3%", "discount": "35", "rating": ""}]
 
-    # print(sorted(list_of_dicts.items(), key = get_price_per_weight, reverse=True))
+    # print(sorted(list_of_dicts.items(), key = get_val_price_per_weight, reverse=True))
     #     #  price_per_weight = item[1].get("price_per_weight", 0)
     #     #                    ~~~~^^^
     #     # KeyError: 1
@@ -661,3 +753,18 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# "\u0433" = "г"
+# "\u043b" = "л"
+# "\u0448\u0442" = "шт"
+# "\u0448\u0442/\u0443\u043f" = "шт/уп"
+# "\u0433/\u0443\u043f" = "г/уп"
+# "\u043a\u0433" = "кг"
+# "\u043c\u043b" = "мл"
+
+# 0.2
+# 0.25
+# 0.5
+# 0.95
+# 1.5
+# 2.0
