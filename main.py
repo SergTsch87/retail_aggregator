@@ -175,12 +175,11 @@ def extract_element(soup, tag, class_name):  # def get_item_any_way(soup, tag, c
     return element.get_text(strip=True) if element else ''
 
 
-def get_round(current_price):
-    if len(current_price) >= 5:
-        return float(current_price[:-4])
+def get_round(price):
+    if len(price) >= 5:
+        return float(price[:-4])
     else:
-        return current_price
-
+        return price
 
 
 def trim_ratio(ratio):
@@ -326,7 +325,7 @@ def parse_product_card(html_card):
         url_card = soup.find("a")["href"] if soup.find("a") else ''
         id_tovar = get_id_tovar(url_card)
 
-        print(f'url_card == {url_card}')
+        # print(f'url_card == {url_card}')
         subgroup = url_card.split('/')[2].split('-')[0]
     except requests.RequestException as e:
             logging.error(f"Attempt failed for {url_card}.")
@@ -343,6 +342,7 @@ def parse_product_card(html_card):
         "volume_part": volume_part,
         "ratio_part": ratio_part,
         "discount": discount,
+        "real_discount": real_discount,
         "differ_discounts": differ_discounts,
         "title": title,
         "rating": extract_element(soup,
@@ -475,8 +475,12 @@ def save_to_file(data, fname='data.jsonl'):
     file_path = get_file_path(fname)
     with file_path.open(mode='a', encoding='utf-8') as file:
         # for record_key, record_value in data.items():
-        for record in data.items():
-            file.write(json.dumps(record) + '\n')
+        if type(data) is list:
+            for record in data:
+                file.write(json.dumps(record) + '\n')
+        elif type(data) is dict:
+            for record in data.items():
+                file.write(json.dumps(record) + '\n')
     # print('The End code in save_to_file')
     
 
@@ -496,7 +500,7 @@ def fetch_all_stores(store_urls):
 # # Які є засоби убезпечити код в таких випадках?..
 # def load_data_with_jsonl(fname, str_statement):
 #     # Витягає дані, які відповідають певній умові коду str_statement
-#     file_path = get_file_path(fname)
+#     file_path = str(get_file_path(fname))
 #     with open(file_path, 'r', encoding='utf-8') as f:
 #         return [json.loads(line) for line in f if eval(str_statement)]
 
@@ -504,18 +508,36 @@ def fetch_all_stores(store_urls):
 # Які є засоби убезпечити код в таких випадках?..
 def load_data_with_jsonl(fname):
     # Витягає дані, які відповідають певній умові коду str_statement
-    file_path = get_file_path(fname)
-    with open(file_path, 'r', encoding='utf-8') as f:
-        return [json.loads(line) for line in f]
-        # return json.load(fname)
-    # Який є швидший спосіб витягти усі записи з файлу?
+    
+    # file_path = str(get_file_path(fname))
+    # with open(file_path, 'r', encoding='utf-8') as f:
+    #     # return [json.loads(line) for line in f]
+    #     return json.load(f)
+    # # Який є швидший спосіб витягти усі записи з файлу?
+
+    file_path = str(get_file_path(fname))
+    new_list = []
+    # if not file_path.exists():
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f'File {file_path} not found')
+    else:
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                # return json.load(f)
+                for line in f:
+                    record = json.loads(line)
+                    new_list.append(record)
+        except json.JSONDecodeError as e:
+            raise ValueError(f'Помилка декодування JSON у файлі {file_path}: {e}')
+    
+    return new_list
 
 
 def get_top_volume_parts(fname, top_n=10):
     volume_counter = Counter()
 
     # Перший прохід - обчислення частоти volume_part
-    file_path = get_file_path(fname)
+    file_path = str(get_file_path(fname))
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
             try:
@@ -534,7 +556,7 @@ def get_top_volume_parts(fname, top_n=10):
 # 2) Порівняй ціни на товари з однаковою вагою / назвою підгрупи
 def compare_prices(fname):
     # Виведи усі товари вагою 200 г, з назвою 'moloko', з їх цінами та url_card's
-    file_path = get_file_path(fname)
+    file_path = str(get_file_path(fname))
     list_products = []
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -558,41 +580,54 @@ def compare_prices(fname):
 
 
 def get_sorted_records(fname):
-    # Повертає продукти, які є найдорожчими (за 1 кг / 1 л)    file_path = get_file_path(fname)
-    records = []
-    file_path = get_file_path(fname)
-    # with file_path.open(mode='r', encoding='utf-8') as f:
+    file_path = str(get_file_path(fname))
+    data = []
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
-            try:
-                record = json.loads(line)
-                # print(record)
-                # print(record['ratio_part'])
-                if 'ratio_part' in record and ('г' in record['ratio_part'] or 'л' in record['ratio_part']):
-                    records.append(record)
-                    # print(records)
-                # print(f'records == {records}')
-                
-                # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'smetana':
-                #     list_products.append(record)
-                # # dict_volume_counter = get_top_volume_parts(fname, top_n=10)[1]
-                # # if dict_volume_counter[record['volume_part']] == 
-            except (json.JSONDecodeError, KeyError):
-                continue
-    
-    # dict_sorted_records = sorted(records, key = lambda x: x.get('price_per_weight', 0), reverse=True)
-    
-    # dict_sorted_records = sorted(records, key = lambda x: getattr(x, 'price_per_weight'), reverse=True)
-    # dict_sorted_records = sorted(records, key = lambda x: getattr(x, 'current_price'), reverse=True)
-    
-    # dict_sorted_records = sorted(records.items(), key = lambda x: x[1], reverse=True)
-    dict_sorted_records = sorted(records.items(), key = get_val_price_per_weight, reverse=True)
-    return dict_sorted_records
-    # return records
+            line = line.strip()
+            if line:
+                parsed_line = json.loads(line)
+                data.append(parsed_line)
+        return sorted(data, key=lambda x: [x[1]['price_per_weight'] is None, x[1]['price_per_weight'] == '', x[1]['price_per_weight']], reverse=True)
+    # return sorted(data, key=lambda x: float(x[1]['price_per_weight']) if x[1]['price_per_weight'] == '' else, reverse=True)
 
+
+# def get_sorted_records(fname):
+#     # Повертає продукти, які є найдорожчими (за 1 кг / 1 л)    file_path = str(get_file_path(fname))
+#     list_of_listts_records = []
+#     file_path = str(get_file_path(fname))
+#     # with file_path.open(mode='r', encoding='utf-8') as f:
+#     with open(file_path, 'r', encoding='utf-8') as f:
+#         for line in f:
+#             try:
+#                 record = json.loads(line)
+#                 # print(record)
+#                 # print(record['ratio_part'])
+#                 if 'ratio_part' in record and ('г' in record['ratio_part'] or 'л' in record['ratio_part']):
+#                     list_of_listts_records.append(record)
+#                     # print(list_of_listts_records)
+#                 # print(f'list_of_listts_records == {list_of_listts_records}')
+                
+#                 # if record['volume_part'] == 200 and record['url_card'].split('/')[2].split('-')[0] == 'smetana':
+#                 #     list_products.append(record)
+#                 # # dict_volume_counter = get_top_volume_parts(fname, top_n=10)[1]
+#                 # # if dict_volume_counter[record['volume_part']] == 
+#             except (json.JSONDecodeError, KeyError):
+#                 continue
+    
+#     # dict_sorted_records = sorted(records, key = lambda x: x.get('price_per_weight', 0), reverse=True)
+    
+#     # dict_sorted_records = sorted(records, key = lambda x: getattr(x, 'price_per_weight'), reverse=True)
+#     # dict_sorted_records = sorted(records, key = lambda x: getattr(x, 'current_price'), reverse=True)
+    
+#     # dict_sorted_records = sorted(records.items(), key = lambda x: x[1], reverse=True)
 #     dict_sorted_records = sorted(records.items(), key = get_val_price_per_weight, reverse=True)
-#                                  ^^^^^^^^^^^^^
-# AttributeError: 'list' object has no attribute 'items'
+#     return dict_sorted_records
+#     # return records
+
+# #     dict_sorted_records = sorted(records.items(), key = get_val_price_per_weight, reverse=True)
+# #                                  ^^^^^^^^^^^^^
+# # AttributeError: 'list' object has no attribute 'items'
 
 
 
@@ -624,11 +659,12 @@ def main():
     base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
     fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
     
-    file_path = get_file_path(fname)
-    if not os.path.isfile(file_path):   # якщо файлу ще нема, тоді створімо його:
-        all_products = fetch_all_pages(base_url, start_page=1)
+    file_path = str(get_file_path(fname))
+    # if not os.path.isfile(file_path):   # якщо файлу ще нема, тоді створімо його:
+    #     all_products = fetch_all_pages(base_url, start_page=1)
 
-    # list_data = load_data_with_jsonl(fname)
+    # list_data = load_data_with_jsonl(file_path)
+    # print(f'list_data[0] == {list_data[1]}')
 
     # top_volumes_freq = get_top_volume_parts(fname, top_n=10)
     # print(f'top_volumes_freq == {top_volumes_freq[:10]}')
@@ -640,10 +676,10 @@ def main():
 
 
     # fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
-    # dict_sorted_products = get_sorted_records(fname)
+    dict_sorted_products = get_sorted_records(fname)
 
-    # file_name = 'sorted_' + fname
-    # save_to_file(dict_sorted_products, file_name)
+    file_name = 'sorted_' + fname
+    save_to_file(dict_sorted_products, file_name)
 
 
     # list_of_dicts = {908058: {"url_card": "/product/maslo-solodkovershkove-molokiia-73-908058", "current_price": 69.99, "old_price": 99.0, "ratio_part": "\u0433", "volume_part": 180, "price_per_weight": 388.83, "title": "\u041c\u0430\u0441\u043b\u043e \u0441\u043e\u043b\u043e\u0434\u043a\u043e\u0432\u0435\u0440\u0448\u043a\u043e\u0432\u0435 \u00ab\u041c\u043e\u043b\u043e\u043a\u0456\u044f\u00bb 73%", "discount": "29", "rating": "4.5"},
