@@ -178,12 +178,14 @@ def get_round(price):
 
 
 def trim_ratio(ratio):
+    # Міра обсягу (г, мг)
     if ratio[0] == '/':
         ratio = ratio[1:]
     return ratio
 
 
 def trim_volume(volume):
+    # Розмір обсягу (г, мг)
     volume = volume.replace(',', '.')
     if len(volume) >= 1:
         return eval(volume)
@@ -198,18 +200,20 @@ def get_ratio_and_volume(volume):
     та
         volume_part (float; розмір обсягу)
     """
-    if len(volume) >= 1:
-        pos_last_num = len(volume)
-        for index, symbol in enumerate(reversed(volume)):
+    if len(volume) >= 1:            # Якщо змінна volume містить хоч щось
+        pos_last_num = len(volume)  # Індекс для поділу на число та текст
+        for index, symbol in enumerate(reversed(volume)):  # Визначаємо позицію останньої правої цифри у змінній volume
+            index = 2 if ( 'дм3' in volume ) else index
             if symbol.isdigit():
                 pos_last_num = len(volume) - index
                 break
 
-        if pos_last_num == len(volume) and volume[0].isalpha():
+        if pos_last_num == len(volume) and volume[0].isalpha():  # Змінна volume містить один текст
             pos_last_num = 0
 
-        ratio_part = trim_ratio( volume[pos_last_num:] )
-        volume_part = trim_volume( volume[:pos_last_num] )
+        print(f'\nBefore trim_ratio:\nvolume == {volume}\n')
+        ratio_part = trim_ratio( volume[pos_last_num:] )  # міра обсягу  (г, мл)
+        volume_part = trim_volume( volume[:pos_last_num] )  # кількість обсягу
         return ratio_part, volume_part
     else:
         ratio_part, volume_part = '', ''
@@ -261,7 +265,7 @@ def get_price_per_weight(current_price, volume_part, ratio_part):
 def parse_product_card(html_card):
     # Extract Data from a Single Product Card
     # Саме в цій функції ми визначаємо усі ті дані, які хочемо дістати з кожної товарної картки
-    time.sleep(0.2)
+    time.sleep(0.3)
     soup = BeautifulSoup(html_card, 'html.parser')
 
     current_price = extract_element(soup, "div", "ft-whitespace-nowrap ft-text-22 ft-font-bold")
@@ -271,6 +275,7 @@ def parse_product_card(html_card):
     old_price = get_round(old_price)
 
     volume = extract_element(soup, "div", "ft-typo-14-semibold xl:ft-typo-16-semibold")
+    print(f'\nInside parse_product_card:\nvolume == {volume}\n')
     ratio_part, volume_part = get_ratio_and_volume(volume)
     # ratio_part = <"шт" / "кг" / "л">
     # volume_part = <1, 0.5, 125>
@@ -281,6 +286,7 @@ def parse_product_card(html_card):
         real_discount = get_real_discount(current_price, old_price)
         differ_discounts = real_discount - discount
     else:
+        real_discount = 0
         differ_discounts = ''
 
     volume_part, ratio_part = converting_volume_measure(volume_part, ratio_part)
@@ -289,6 +295,7 @@ def parse_product_card(html_card):
     
     try:
         url_card = soup.find("a")["href"] if soup.find("a") else ''
+        print(f'\nInside parse_product_card:\nurl_card == {url_card}\n')
         id_tovar = get_id_tovar(url_card)
         subgroup = url_card.split('/')[2].split('-')[0]
     except requests.RequestException as e:
@@ -327,7 +334,9 @@ def parse_page(html_page):
     
     set_ids = set()
     for card in product_cards:
+        # print(f"\nInside parse_page, before assign for current_card:\ncurrent_card['url_card'] == {current_card['url_card']}\n")
         current_card = parse_product_card(str(card))
+        print(f"\nInside parse_page, after assign for current_card:\ncurrent_card['url_card'] == {current_card['url_card']}\n")
         if current_card['id_tovar'] not in set_ids:
             # Винесемо id_tovar зі словника:
             tmp_id_tovar = current_card['id_tovar']
@@ -346,7 +355,8 @@ def get_max_pagination(base_url):
     # Повертає найбільшу к-сть сторінок певної категорії
     # """
     soup = fetch_content(base_url, timeout=10, return_soup=True)
-    return int(soup.find('div', class_='pagination__gutter').find_next_sibling('a').get_text(strip=True))
+    block_pagination = soup.find('div', class_='pagination__gutter')
+    return int(block_pagination.find_next_sibling('a').get_text(strip=True)) if block_pagination else 1
     
 
 @timer_elapsed
@@ -391,8 +401,14 @@ def fetch_all_pages(base_url, start_page=1):
 
         products = parse_page(html)
         
-        url_page_category = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-        save_to_file(products, url_page_category.split('/')[4] + '.jsonl')
+        url_page_category = base_url.split('/')[4]
+        # if '?' in url_page_category:
+        #     end_pos = url_page_category.find('?')
+        #     url_page_category = url_page_category[:end_pos]
+        
+        save_to_file(products, url_page_category + '.jsonl')
+        # save_to_file(products, url_page_category.split('/')[4] + '.jsonl')
+        
         dict_entries['count_pages'] = dict_entries.get('count_pages', 0) + 1
         dict_entries['count_entries'] = dict_entries.get('count_entries', 0) + len(products)
 
@@ -530,32 +546,81 @@ def main():
 
 
     # # Expanding Gradually
-    # # Pass the URL of the next store as an argument to fetch_all_pages
-    
-    base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
-    fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
-    
-    file_path = str(get_file_path(fname))
-    # if not os.path.isfile(file_path):   # якщо файлу ще нема, тоді створімо його:
-    #     all_products = fetch_all_pages(base_url, start_page=1)
+    # # Pass the URL of the next store as an argument to fetch_all_pages    
 
-    # list_data = load_data_with_jsonl(file_path)
-    # print(f'list_data[0] == {list_data[1]}')
+    list_links_categories = [
+        # "spetsialni-propozytsii-5189",   #     Спеціальні пропозиції
+        # "frukty-ovochi-4788",   #     Фрукти, овочі
+        # "m-iaso-4411",   #     М'ясо
+        # "ryba-4430",   #     Риба
+        # "kovbasni-vyroby-i-m-iasni-delikatesy-4731",   #     Ковбаси і м'ясні делікатеси
+        # "syry-1468",   #     Сири
+        # "khlib-ta-vypichka-5121",   #     Хліб та випічка
+        # "gotovi-stravy-i-kulinariia-4761",   #     Готові страви і кулінарія
+        # # "molochni-produkty-ta-iaitsia-234",   #     Молочні продукти та яйця
+        
+        # # "vlasni-marky-5202",   #     Власні марки
+        # "silpovi-khity-vlasnykh-marok-5203",
+        # "silpovi-khity-vlasnykh-marok-5204",  # >>> https://silpo.ua/notfound
+        # "novynky-vlasnykh-marok-5204",
+        # "produkty-vlasnykh-marok-5205",  # Продукти
+        # "napoi-vlasnykh-marok-5208",  # Напої
 
-    # top_volumes_freq = get_top_volume_parts(fname, top_n=10)
-    # print(f'top_volumes_freq == {top_volumes_freq[:10]}')
-    #     # volume_counter == Counter({200: 176, 180: 150, 300: 148, 100: 121, 400: 102, 350: 97, 500: 97, 1: 97, 900: 91, 250: 86})
-    #     # Як бачимо, більшість товарів мають пакування у 100..500 г
+        # "lavka-tradytsii-4487",   #     Лавка Традицій
+        # "zdorove-kharchuvannia-4864",   #     Здорове харчування
+        "bakaliia-i-konservy-4870",   #     Бакалія і консерви  # https://silpo.ua/category/bakaliia-i-konservy-4870?page=22  - через "дм3" у розділі міри ваги
+        # "sousy-i-spetsii-4938",   #     Соуси і спеції
+        # "solodoshchi-498",   #     Солодощі
+        # "sneky-ta-chypsy-5016",   #     Снеки та чипси
+        # "kava-chai-359",   #     Кава, чай
+        "napoi-52",   #     Напої   #  https://silpo.ua/category/napoi-52?page=34 - через "дм3" у розділі міри ваги
+        # "zamorozhena-produktsiia-264",   #     Заморожена продукція
+        "sygarety-stiky-zhuiky-4384?filters=typeofproduct-is-1eef1f4f-ab01-6518-bd95-2b6d83ba3109"   #     Жуйки  # Символ '?' у назві файлу
+    ]
 
-    # list_prods = compare_prices(fname)
-    # print(f'list_prods == {list_prods}')
+    # href="/category/" + item
+    for link in list_links_categories:
+        all_products = []
+        base_url = 'https://silpo.ua/category/' + link
+        
+        # if '?' in link:
+        #     end_pos = link.find('?')
+        #     link = link[:end_pos]
+
+        fname = link + '.jsonl'
+        file_path = str(get_file_path(fname))
+        if not os.path.isfile(file_path):   # якщо файлу ще нема, тоді створімо його:
+            all_products = fetch_all_pages(base_url, start_page=1)
+        dict_sorted_products = get_sorted_records(fname)
+        file_name = 'sorted_' + fname
+        save_to_file(dict_sorted_products, file_name)
 
 
+
+    # base_url = 'https://silpo.ua/category/molochni-produkty-ta-iaitsia-234'
     # fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
-    dict_sorted_products = get_sorted_records(fname)
+    
+    # file_path = str(get_file_path(fname))
+    # # if not os.path.isfile(file_path):   # якщо файлу ще нема, тоді створімо його:
+    # #     all_products = fetch_all_pages(base_url, start_page=1)
 
-    file_name = 'sorted_' + fname
-    save_to_file(dict_sorted_products, file_name)
+    # # list_data = load_data_with_jsonl(file_path)
+    # # print(f'list_data[0] == {list_data[1]}')
+
+    # # top_volumes_freq = get_top_volume_parts(fname, top_n=10)
+    # # print(f'top_volumes_freq == {top_volumes_freq[:10]}')
+    # #     # volume_counter == Counter({200: 176, 180: 150, 300: 148, 100: 121, 400: 102, 350: 97, 500: 97, 1: 97, 900: 91, 250: 86})
+    # #     # Як бачимо, більшість товарів мають пакування у 100..500 г
+
+    # # list_prods = compare_prices(fname)
+    # # print(f'list_prods == {list_prods}')
+
+
+    # # fname = 'molochni-produkty-ta-iaitsia-234.jsonl'
+    # dict_sorted_products = get_sorted_records(fname)
+
+    # file_name = 'sorted_' + fname
+    # save_to_file(dict_sorted_products, file_name)
 
 
     # list_of_dicts = {908058: {"url_card": "/product/maslo-solodkovershkove-molokiia-73-908058", "current_price": 69.99, "old_price": 99.0, "ratio_part": "\u0433", "volume_part": 180, "price_per_weight": 388.83, "title": "\u041c\u0430\u0441\u043b\u043e \u0441\u043e\u043b\u043e\u0434\u043a\u043e\u0432\u0435\u0440\u0448\u043a\u043e\u0432\u0435 \u00ab\u041c\u043e\u043b\u043e\u043a\u0456\u044f\u00bb 73%", "discount": "29", "rating": "4.5"},
@@ -601,10 +666,3 @@ if __name__ == "__main__":
 # "\u0433/\u0443\u043f" = "г/уп"
 # "\u043a\u0433" = "кг"
 # "\u043c\u043b" = "мл"
-
-# 0.2
-# 0.25
-# 0.5
-# 0.95
-# 1.5
-# 2.0
